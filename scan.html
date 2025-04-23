@@ -1,57 +1,424 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>KORONA API Test</title>
-     <!-- Load KORONA script FIRST -->
-     <script type="text/javascript" src="korona-plugin-api.js"></script>
-     <script>
-         // Try to access the API immediately after script load and on window load
-         function checkApi() {
-             console.log("Attempting API check...");
-             try {
-                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api) {
-                     console.log("KORONA API DETECTED!");
-                     document.getElementById("status").textContent = "SUCCESS: KORONA API Found!";
-                     document.getElementById("status").style.color = "green";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Verification</title>
 
-                     // Optional: Try calling ready
-                     korona_plugin_api.ready(function() {
-                         console.log("KORONA API Ready Callback Fired!");
-                         document.getElementById("ready").textContent = "API Ready: Yes";
-                         try {
-                              // Log request data if possible
-                              console.log("Request Data:", JSON.stringify(korona_plugin_api.request || {}));
-                              document.getElementById("data").textContent = "Request Data: " + JSON.stringify(korona_plugin_api.request || { type: 'No data received' });
-                         } catch(e) {
-                              console.error("Error accessing request data:", e);
-                              document.getElementById("data").textContent = "Error accessing request data.";
-                         }
-                     });
+    <!-- Reference to KORONA Plugin API Library -->
+    <!-- Ensure 'korona-plugin-api.js' is in the same directory or provide the correct path relative to this file -->
+    <script type="text/javascript" src="korona-plugin-api.js"></script>
 
-                 } else {
-                     console.error("KORONA API *NOT* DETECTED.");
-                     document.getElementById("status").textContent = "FAILURE: korona_plugin_api is not defined.";
-                     document.getElementById("status").style.color = "red";
-                 }
-             } catch (e) {
-                 console.error("Error during API check:", e);
-                 document.getElementById("status").textContent = "ERROR during check: " + e.message;
-                 document.getElementById("status").style.color = "red";
-             }
-         }
-
-         // Run check on window load
-         window.onload = checkApi;
-         // Also run check slightly after load, just in case timing is weird
-         setTimeout(checkApi, 500);
-
-     </script>
+    <style>
+        /* Minimal Modern Styling */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 90vh;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 20px;
+            text-align: center;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 { color: #2a3b4c; margin-bottom: 20px; }
+        #instructions, #scan-area, #manual-entry-area, #result-area, #error-area {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #instructions { font-size: 1.1em; color: #555; }
+        #scan-area input[type="text"], #manual-entry-area input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 70%;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+         label { display: block; margin-bottom: 5px; font-weight: bold;}
+        #result-area { border: 1px solid #d1e7dd; background-color: #f0fff4; color: #0f5132; font-weight: bold; }
+        #error-area { border: 1px solid #f5c6cb; background-color: #fff0f1; color: #842029; font-weight: bold; text-transform: uppercase; }
+        .hidden { display: none; }
+        button {
+            background-color: #007bff; color: white; padding: 10px 18px; border: none;
+            border-radius: 5px; cursor: pointer; font-size: 0.95em; margin-top: 10px;
+            transition: background-color 0.2s ease; margin-left: 5px; margin-right: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button#acknowledge-button { background-color: #6c757d; }
+        button#acknowledge-button:hover { background-color: #5a6268; }
+        hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 25px 0; }
+        /* Style for warning messages */
+        #warning-area {
+            margin-top: 15px; padding: 10px; border-radius: 5px;
+            border: 1px solid #ffecb5; background-color: #fffbeb; color: #664d03; font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <h1>KORONA API Injection Test</h1>
-    <p id="status">Checking for KORONA API...</p>
-    <p id="ready">API Ready: No</p>
-    <pre id="data" style="border:1px solid #ccc; padding: 5px; max-height: 200px; overflow: auto;">Request Data: Waiting...</pre>
-     <button onclick="korona_plugin_api ? korona_plugin_api.backToKorona() : alert('KORONA API not found');">Test Back Button</button>
+    <div class="container">
+        <h1>Scan Customer's ID - Age Verification Required</h1>
+
+        <!-- Scan Section -->
+        <div id="scan-section">
+             <div id="instructions">
+                 Please scan the barcode on the back of the customer's Driver's License.
+             </div>
+             <div id="scan-area">
+                 <label for="scan-input">Scanner Input:</label>
+                 <input type="text" id="scan-input" name="scan-input" autocomplete="off" autofocus>
+             </div>
+        </div>
+
+        <hr>
+
+        <!-- Manual Entry Section -->
+        <div id="manual-entry-section">
+             <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label>
+             <div id="manual-entry-area">
+                 <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10">
+                 <button id="manual-verify-button">Verify Manual Date</button>
+             </div>
+             <div id="manual-entry-instructions" style="font-size: 0.9em; color: #555; margin-top: 5px;">
+                (Use only if scan fails *and* you have visually verified the ID is not expired)
+             </div>
+        </div>
+
+        <!-- Result/Error/Warning Area -->
+        <div id="result-area" class="hidden"></div>
+        <div id="error-area" class="hidden"></div>
+        <div id="warning-area" class="hidden"></div> <!-- Added warning area -->
+        <button id="acknowledge-button" class="hidden">Acknowledge & Return to POS</button>
+
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // --- Configuration ---
+        const REQUIRED_SECTOR_NUMBER = "1";
+        const BACKEND_VERIFY_URL = "https://i3r4d.pythonanywhere.com/api/verify-id";
+
+        // --- DOM Elements ---
+        let scanInput, manualDobInput, manualVerifyButton, resultArea, errorArea, warningArea, instructionsDiv, acknowledgeButton, scanSectionDiv, manualEntrySectionDiv;
+
+        // Flag to prevent double submission
+        let processingScan = false;
+
+        // --- Initialization ---
+        window.onload = function() {
+            console.log("Window loaded.");
+
+            // Get DOM elements after page load
+            scanInput = document.getElementById('scan-input');
+            manualDobInput = document.getElementById('manual-dob-input');
+            manualVerifyButton = document.getElementById('manual-verify-button');
+            resultArea = document.getElementById('result-area');
+            errorArea = document.getElementById('error-area');
+            warningArea = document.getElementById('warning-area'); // Get warning area
+            instructionsDiv = document.getElementById('instructions');
+            acknowledgeButton = document.getElementById('acknowledge-button');
+            scanSectionDiv = document.getElementById('scan-section');
+            manualEntrySectionDiv = document.getElementById('manual-entry-section');
+
+            // Defensively check if critical elements exist before proceeding
+            if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton || !resultArea || !errorArea || !warningArea) {
+                 console.error("FATAL: One or more critical HTML elements are missing from the page.");
+                 displayFatalError("Page structure error. Required elements missing.");
+                 return; // Stop execution
+            }
+
+
+            // Check if running inside KORONA POS environment
+            // Use a try-catch here as accessing an undefined variable throws an error
+            try {
+                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api) {
+                     console.log("KORONA Plugin API detected. Registering ready callback.");
+                     korona_plugin_api.ready(initializePage); // Call named function when KORONA is ready
+                 } else {
+                      throw new Error("korona_plugin_api is not defined"); // Explicitly throw if not found
+                 }
+            } catch (error) {
+                // This block runs if korona_plugin_api is truly undefined or if .ready() fails
+                console.warn("KORONA Plugin API not found or failed initialization:", error.message);
+                // Setup for browser mode (layout check)
+                setupListeners(); // Setup basic UI listeners
+                scanInput.focus();
+                displayWarning("Running outside KORONA POS or API failed to load. Verification check and POS interactions are disabled.");
+            }
+        };
+
+        function initializePage() {
+             // This function only runs IF korona_plugin_api was found and ready() fired
+             try {
+                console.log("KORONA Plugin API Ready. Initializing page.");
+                const requestData = korona_plugin_api.request; // Should exist now
+                const receipt = requestData?.receipt;
+
+                console.log("Received KORONA request data:", JSON.stringify(requestData || {}, null, 2));
+
+                if (!isVerificationNeeded(receipt)) {
+                    console.log(`No items from Sector ${REQUIRED_SECTOR_NUMBER}. Skipping verification.`);
+                    safeBackToKorona();
+                    return;
+                }
+
+                console.log("Age verification required. Setting up listeners.");
+                setupListeners();
+                scanInput.focus();
+
+            } catch (error) {
+                console.error("Error during KORONA page initialization:", error);
+                displayFatalError(`Initialization Error: ${error.message || 'Could not process KORONA data.'}`);
+            }
+        }
+
+
+        // --- Helper Functions ---
+        function isVerificationNeeded(receipt) {
+             if (!receipt || !receipt.sales || !Array.isArray(receipt.sales) || receipt.sales.length === 0) {
+                console.warn("Receipt data is missing, empty, or not an array for verification check.");
+                return false;
+            }
+            return receipt.sales.some(item => item && item.sector?.number === REQUIRED_SECTOR_NUMBER);
+        }
+
+        // --- Event Listeners Setup ---
+        function setupListeners() {
+             // Check elements again just in case of timing issues with onload
+             if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton) {
+                 console.error("Listeners setup aborted: Critical elements missing.");
+                 return;
+             }
+
+             // Scan Input Listener
+             scanInput.addEventListener('keydown', function(event) {
+                 console.log(`>> keydown event: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`);
+                 if (event.key === 'Enter' || event.keyCode === 13) {
+                     event.preventDefault();
+                     if (processingScan) return;
+                     processingScan = true;
+                     setTimeout(() => {
+                         const scannedData = scanInput.value.trim();
+                         console.log("Scanner input value after Enter (keydown):", scannedData);
+                         if (scannedData) {
+                             disableInputs();
+                             if(instructionsDiv) instructionsDiv.textContent = "Processing scanned data...";
+                             verifyIdOnBackend({ scanData: scannedData });
+                         } else {
+                             console.log("Scan input was empty after Enter.");
+                             displayError("Scan input empty. Please scan again.", false);
+                             enableInputs(); // Allow retry if empty
+                             processingScan = false;
+                         }
+                     }, 100);
+                 }
+             });
+             scanInput.addEventListener('keyup', function(event) { // Keep for logging
+                 console.log(`>> keyup event: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`);
+             });
+
+             // Manual DOB Input Formatting
+             manualDobInput.addEventListener('input', function(e) {
+                 let value = e.target.value.replace(/\D/g, '');
+                 if (value.length > 2 && value.length <= 4) { value = value.slice(0, 2) + '/' + value.slice(2); }
+                 else if (value.length > 4) { value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8); }
+                 e.target.value = value;
+             });
+
+            // Manual Verify Button Listener
+            manualVerifyButton.addEventListener('click', function() {
+                processingScan = false;
+                const manualDobValue = manualDobInput.value.trim();
+                console.log("Manual verify clicked. DOB:", manualDobValue);
+                const dateFormat = /^\d{2}\/\d{2}\/\d{4}$/;
+                if (!dateFormat.test(manualDobValue)) {
+                    displayError("Invalid date format. Please use MM/DD/YYYY.", false);
+                    manualDobInput.focus();
+                    return;
+                }
+                disableInputs();
+                if(instructionsDiv) instructionsDiv.textContent = "Processing manual date...";
+                verifyIdOnBackend({ manualDob: manualDobValue });
+            });
+
+            // Acknowledge Button Listener
+            acknowledgeButton.addEventListener('click', function() {
+                console.log("Acknowledge button clicked.");
+                safeBackToKorona();
+            });
+        }
+
+        // --- Backend Communication ---
+        async function verifyIdOnBackend(payload) {
+            clearMessages();
+            if(instructionsDiv) instructionsDiv.textContent = "Verifying...";
+
+            console.log("Sending payload to backend:", JSON.stringify(payload));
+
+            // Check if we are in browser mode - if so, simulate backend call for testing UI
+             if (typeof korona_plugin_api === 'undefined') {
+                 console.warn("Simulating backend call in browser mode...");
+                 processingScan = false; // Reset flag
+                 // Simulate a delay
+                 await new Promise(resolve => setTimeout(resolve, 1000));
+                 // Simulate a response (e.g., success for layout check)
+                 // To test failure UI: change success: false and add a message
+                 handleVerificationResult({ success: true, message: "Simulated Success (Browser Mode)" });
+                 // handleVerificationResult({ success: false, message: "DENY SALE - CUSTOMER IS UNDER 21" }); // Example failure test
+                 return;
+             }
+
+
+            // --- Actual Backend Call (only if KORONA API exists) ---
+            try {
+                const response = await fetch(BACKEND_VERIFY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const responseText = await response.text();
+                console.log("Raw backend response:", responseText);
+                processingScan = false; // Reset flag
+
+                if (!response.ok) {
+                    let errorMsg = `Backend error: ${response.status} ${response.statusText}`;
+                    try { errorMsg = JSON.parse(responseText).message || errorMsg; } catch (e) {}
+                    throw new Error(errorMsg);
+                }
+                const result = JSON.parse(responseText);
+                handleVerificationResult(result); // Handle success or logical failure
+
+            } catch (error) {
+                 console.error("Error verifying ID:", error);
+                 const errorMsg = error.message || "Communication error.";
+                 displayError(`System Error: ${errorMsg}`, false); // Allow retry on comms error
+                 enableInputs();
+                 processingScan = false;
+            }
+        }
+
+        // --- Handling Backend Result ---
+        function handleVerificationResult(result) {
+            processingScan = false; // Ensure flag is reset
+
+            if (result.success === true) {
+                console.log("Verification Successful:", result.message);
+                displaySuccess(`Verification Success: ${result.message}`);
+                safeAddKoronaReceiptInfo();
+                setTimeout(() => {
+                     console.log("Returning control to KORONA POS after success.");
+                     safeBackToKorona();
+                }, 1500);
+             } else {
+                 console.warn("Verification Failed:", result.message);
+                 let failureReason = "VERIFICATION FAILED - SALE DENIED";
+                 const backendMessage = result.message || "";
+                 let allowRetry = false;
+
+                 if (backendMessage.toUpperCase().includes("UNDERAGE")) { failureReason = "DENY SALE - CUSTOMER IS UNDER 21"; }
+                 else if (backendMessage.toUpperCase().includes("EXPIRED")) { failureReason = "DENY SALE - CUSTOMER'S ID IS EXPIRED"; }
+                 else if (backendMessage.toLowerCase().includes("error reading id") || backendMessage.toLowerCase().includes("could not") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date") || backendMessage.toLowerCase().includes("format")) {
+                     failureReason = `ERROR READING ID/DATE: ${backendMessage}. Check input/scan or use manual entry.`;
+                     if(errorArea) errorArea.style.textTransform = 'none';
+                     allowRetry = true;
+                 } else if (backendMessage) { failureReason = backendMessage.toUpperCase(); }
+
+                 displayError(failureReason, !allowRetry); // Show acknowledge only if not retryable
+
+                 if (allowRetry) {
+                     if(instructionsDiv) instructionsDiv.textContent = "Error reading ID or date. Please try again or use manual entry.";
+                     enableInputs();
+                 } else {
+                     if(instructionsDiv) instructionsDiv.textContent = "Verification Failed. Remove restricted items or cancel transaction.";
+                     if(scanSectionDiv) scanSectionDiv.classList.add('hidden');
+                     if(manualEntrySectionDiv) manualEntrySectionDiv.classList.add('hidden');
+                 }
+            }
+        }
+
+        // --- Safe Wrappers for KORONA API Calls ---
+        function safeBackToKorona() {
+             try {
+                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.backToKorona) {
+                     korona_plugin_api.backToKorona();
+                 } else {
+                     console.warn("Cannot call backToKorona() - KORONA API not available.");
+                     displayWarning("Action complete (Browser Mode). Normally would return to POS.");
+                 }
+             } catch(e) { console.error("Error calling backToKorona:", e); }
+        }
+        function safeAddKoronaReceiptInfo() {
+             try {
+                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.response?.addReceiptAdditionalInfo) {
+                     korona_plugin_api.response.addReceiptAdditionalInfo({
+                         key: "AgeVerification",
+                         value: `Verified OK - ${new Date().toLocaleTimeString()}`
+                     });
+                 } else {
+                     console.warn("Cannot add receipt info - KORONA API not available.");
+                 }
+             } catch(e) { console.error("Error calling addReceiptAdditionalInfo:", e); }
+        }
+
+
+        // --- UI Update Functions ---
+        function disableInputs() {
+            if(scanInput) scanInput.disabled = true;
+            if(manualDobInput) manualDobInput.disabled = true;
+            if(manualVerifyButton) manualVerifyButton.disabled = true;
+        }
+        function enableInputs() {
+            // Ensure elements exist before trying to enable/focus
+            if(scanInput) { scanInput.disabled = false; scanInput.value = ''; scanInput.focus(); }
+            if(manualDobInput) manualDobInput.disabled = false;
+            if(manualVerifyButton) manualVerifyButton.disabled = false;
+        }
+        function displaySuccess(message) {
+            clearMessages();
+            if(resultArea) { resultArea.textContent = message; resultArea.classList.remove('hidden'); }
+        }
+        function displayError(message, showAcknowledge) {
+            clearMessages();
+            if(errorArea) { errorArea.textContent = message; errorArea.classList.remove('hidden'); }
+            if(showAcknowledge && acknowledgeButton) { acknowledgeButton.classList.remove('hidden'); }
+        }
+         function displayWarning(message) {
+             clearMessages();
+             if(warningArea) { // Use dedicated warning area now
+                 warningArea.textContent = message;
+                 warningArea.classList.remove('hidden');
+             }
+         }
+         function displayFatalError(message) {
+              clearMessages();
+              if(errorArea) {
+                  errorArea.textContent = `FATAL ERROR: ${message}`;
+                  errorArea.classList.remove('hidden');
+                  errorArea.style.textTransform = 'none'; // Don't uppercase fatal errors
+              }
+              if(scanSectionDiv) scanSectionDiv.classList.add('hidden');
+              if(manualEntrySectionDiv) manualEntrySectionDiv.classList.add('hidden');
+              if(acknowledgeButton) acknowledgeButton.classList.add('hidden');
+         }
+
+        function clearMessages() {
+            if(resultArea) { resultArea.textContent = ''; resultArea.classList.add('hidden'); }
+            if(errorArea) { errorArea.textContent = ''; errorArea.classList.add('hidden'); errorArea.style.textTransform = 'uppercase'; }
+            if(warningArea) { warningArea.textContent = ''; warningArea.classList.add('hidden'); } // Clear warning area
+            if(acknowledgeButton) acknowledgeButton.classList.add('hidden');
+        }
+
+    </script>
 </body>
 </html>
