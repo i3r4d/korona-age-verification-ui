@@ -6,64 +6,66 @@
     <title>Age Verification</title>
 
     <!-- Reference to KORONA Plugin API Library -->
-    <!-- Ensure 'korona-plugin-api.js' is in the same directory or provide the correct path relative to this file -->
     <script type="text/javascript" src="korona-plugin-api.js"></script>
 
     <style>
-        /* Minimal Modern Styling */
+        /* Minimal Modern Styling (keep existing styles) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 90vh;
+            min-height: 90vh; /* Adjust as needed */
             background-color: #f4f7f9;
             color: #333;
-            margin: 20px;
+            margin: 10px; /* Reduce margin slightly */
             text-align: center;
         }
         .container {
             background-color: #ffffff;
-            padding: 20px 30px;
+            padding: 15px 25px; /* Adjust padding */
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             max-width: 600px;
             width: 100%;
         }
-        h1 { color: #2a3b4c; margin-bottom: 20px; }
-        #instructions, #scan-area, #manual-entry-area, #result-area, #error-area {
-            margin-top: 15px;
-            padding: 10px;
+        h1 { color: #2a3b4c; margin-bottom: 15px; font-size: 1.5em; } /* Adjust size */
+        #instructions, #scan-area, #manual-entry-area, #result-area, #error-area, #warning-area {
+            margin-top: 10px; /* Reduce margin */
+            padding: 8px; /* Reduce padding */
             border-radius: 5px;
         }
-        #instructions { font-size: 1.1em; color: #555; }
+        #instructions { font-size: 1.0em; color: #555; } /* Adjust size */
         #scan-area input[type="text"], #manual-entry-area input[type="text"] {
-            padding: 10px;
+            padding: 12px; /* Increase padding for easier tapping */
             border: 1px solid #ccc;
             border-radius: 4px;
-            width: 70%;
+            width: calc(80% - 24px); /* Adjust width considering padding */
             margin-bottom: 10px;
-            font-size: 1em;
+            font-size: 1.1em; /* Slightly larger font */
+             /* Ensure text input background is visible */
+            background-color: #fff;
+            color: #333;
         }
          label { display: block; margin-bottom: 5px; font-weight: bold;}
         #result-area { border: 1px solid #d1e7dd; background-color: #f0fff4; color: #0f5132; font-weight: bold; }
         #error-area { border: 1px solid #f5c6cb; background-color: #fff0f1; color: #842029; font-weight: bold; text-transform: uppercase; }
         .hidden { display: none; }
         button {
-            background-color: #007bff; color: white; padding: 10px 18px; border: none;
-            border-radius: 5px; cursor: pointer; font-size: 0.95em; margin-top: 10px;
+            background-color: #007bff; color: white; padding: 12px 20px; border: none; /* Increase padding */
+            border-radius: 5px; cursor: pointer; font-size: 1.0em; margin-top: 10px; /* Adjust size */
             transition: background-color 0.2s ease; margin-left: 5px; margin-right: 5px;
         }
         button:hover { background-color: #0056b3; }
         button#acknowledge-button { background-color: #6c757d; }
         button#acknowledge-button:hover { background-color: #5a6268; }
-        hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 25px 0; }
-        /* Style for warning messages */
+        hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 20px 0; } /* Adjust margin */
         #warning-area {
             margin-top: 15px; padding: 10px; border-radius: 5px;
             border: 1px solid #ffecb5; background-color: #fffbeb; color: #664d03; font-weight: bold;
         }
+        #manual-entry-instructions { font-size: 0.85em; color: #555; margin-top: 5px; } /* Adjust size */
     </style>
 </head>
 <body>
@@ -76,8 +78,8 @@
                  Please scan the barcode on the back of the customer's Driver's License.
              </div>
              <div id="scan-area">
-                 <label for="scan-input">Scanner Input:</label>
-                 <input type="text" id="scan-input" name="scan-input" autocomplete="off" autofocus>
+                 <!-- No label needed if instruction is clear -->
+                 <input type="text" id="scan-input" name="scan-input" placeholder="Scan ID here..." autocomplete="off" autofocus>
              </div>
         </div>
 
@@ -85,12 +87,12 @@
 
         <!-- Manual Entry Section -->
         <div id="manual-entry-section">
-             <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label>
+             <label for="manual-dob-input">OR Manually enter Date of Birth</label>
              <div id="manual-entry-area">
-                 <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10">
+                 <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10" inputmode="numeric"> <!-- Added inputmode -->
                  <button id="manual-verify-button">Verify Manual Date</button>
              </div>
-             <div id="manual-entry-instructions" style="font-size: 0.9em; color: #555; margin-top: 5px;">
+             <div id="manual-entry-instructions">
                 (Use only if scan fails *and* you have visually verified the ID is not expired)
              </div>
         </div>
@@ -98,7 +100,7 @@
         <!-- Result/Error/Warning Area -->
         <div id="result-area" class="hidden"></div>
         <div id="error-area" class="hidden"></div>
-        <div id="warning-area" class="hidden"></div> <!-- Added warning area -->
+        <div id="warning-area" class="hidden"></div>
         <button id="acknowledge-button" class="hidden">Acknowledge & Return to POS</button>
 
     </div>
@@ -119,50 +121,45 @@
         window.onload = function() {
             console.log("Window loaded.");
 
-            // Get DOM elements after page load
+            // Get DOM elements
             scanInput = document.getElementById('scan-input');
             manualDobInput = document.getElementById('manual-dob-input');
             manualVerifyButton = document.getElementById('manual-verify-button');
             resultArea = document.getElementById('result-area');
             errorArea = document.getElementById('error-area');
-            warningArea = document.getElementById('warning-area'); // Get warning area
+            warningArea = document.getElementById('warning-area');
             instructionsDiv = document.getElementById('instructions');
             acknowledgeButton = document.getElementById('acknowledge-button');
             scanSectionDiv = document.getElementById('scan-section');
             manualEntrySectionDiv = document.getElementById('manual-entry-section');
 
-            // Defensively check if critical elements exist before proceeding
+            // Check critical elements
             if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton || !resultArea || !errorArea || !warningArea) {
-                 console.error("FATAL: One or more critical HTML elements are missing from the page.");
+                 console.error("FATAL: One or more critical HTML elements are missing.");
                  displayFatalError("Page structure error. Required elements missing.");
-                 return; // Stop execution
+                 return;
             }
 
-
-            // Check if running inside KORONA POS environment
-            // Use a try-catch here as accessing an undefined variable throws an error
+            // Check for KORONA API
             try {
                  if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api) {
                      console.log("KORONA Plugin API detected. Registering ready callback.");
-                     korona_plugin_api.ready(initializePage); // Call named function when KORONA is ready
+                     korona_plugin_api.ready(initializePage);
                  } else {
-                      throw new Error("korona_plugin_api is not defined"); // Explicitly throw if not found
+                      throw new Error("korona_plugin_api is not defined");
                  }
             } catch (error) {
-                // This block runs if korona_plugin_api is truly undefined or if .ready() fails
                 console.warn("KORONA Plugin API not found or failed initialization:", error.message);
-                // Setup for browser mode (layout check)
-                setupListeners(); // Setup basic UI listeners
+                setupListeners(); // Setup UI listeners even in browser mode
                 scanInput.focus();
                 displayWarning("Running outside KORONA POS or API failed to load. Verification check and POS interactions are disabled.");
             }
         };
 
         function initializePage() {
-             // This function only runs IF korona_plugin_api was found and ready() fired
              try {
                 console.log("KORONA Plugin API Ready. Initializing page.");
-                const requestData = korona_plugin_api.request; // Should exist now
+                const requestData = korona_plugin_api.request;
                 const receipt = requestData?.receipt;
 
                 console.log("Received KORONA request data:", JSON.stringify(requestData || {}, null, 2));
@@ -174,8 +171,8 @@
                 }
 
                 console.log("Age verification required. Setting up listeners.");
-                setupListeners();
-                scanInput.focus();
+                setupListeners(); // Setup ALL listeners
+                scanInput.focus(); // Focus scan input initially
 
             } catch (error) {
                 console.error("Error during KORONA page initialization:", error);
@@ -183,68 +180,80 @@
             }
         }
 
-
         // --- Helper Functions ---
         function isVerificationNeeded(receipt) {
              if (!receipt || !receipt.sales || !Array.isArray(receipt.sales) || receipt.sales.length === 0) {
                 console.warn("Receipt data is missing, empty, or not an array for verification check.");
-                return false;
+                return false; // Treat missing data as not needing verification
             }
+            // Check if ANY item in the receipt belongs to the required sector
             return receipt.sales.some(item => item && item.sector?.number === REQUIRED_SECTOR_NUMBER);
         }
 
         // --- Event Listeners Setup ---
         function setupListeners() {
-             // Check elements again just in case of timing issues with onload
              if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton) {
                  console.error("Listeners setup aborted: Critical elements missing.");
                  return;
              }
 
-             // Scan Input Listener
+             // Scan Input Listener (for physical scanner)
              scanInput.addEventListener('keydown', function(event) {
-                 console.log(`>> keydown event: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`);
+                 // console.log(`>> keydown event: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`); // Reduce logging noise
                  if (event.key === 'Enter' || event.keyCode === 13) {
                      event.preventDefault();
-                     if (processingScan) return;
-                     processingScan = true;
+                     if (processingScan) return; // Prevent double submits if Enter is held
+                     processingScan = true; // Set flag
+
+                     // Use setTimeout to allow input buffer to fill completely from scanner
                      setTimeout(() => {
                          const scannedData = scanInput.value.trim();
-                         console.log("Scanner input value after Enter (keydown):", scannedData);
+                         console.log("Scanner input value after Enter:", scannedData);
                          if (scannedData) {
                              disableInputs();
                              if(instructionsDiv) instructionsDiv.textContent = "Processing scanned data...";
                              verifyIdOnBackend({ scanData: scannedData });
                          } else {
                              console.log("Scan input was empty after Enter.");
-                             displayError("Scan input empty. Please scan again.", false);
-                             enableInputs(); // Allow retry if empty
-                             processingScan = false;
+                             displayError("Scan input empty. Please scan again.", false); // Allow retry
+                             enableInputs(); // Re-enable for retry
+                             processingScan = false; // Reset flag
                          }
-                     }, 100);
+                     }, 100); // 100ms delay seems reasonable
                  }
              });
-             scanInput.addEventListener('keyup', function(event) { // Keep for logging
-                 console.log(`>> keyup event: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`);
-             });
 
-             // Manual DOB Input Formatting
+             // Manual DOB Input Formatting (MM/DD/YYYY)
              manualDobInput.addEventListener('input', function(e) {
-                 let value = e.target.value.replace(/\D/g, '');
+                 let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
                  if (value.length > 2 && value.length <= 4) { value = value.slice(0, 2) + '/' + value.slice(2); }
                  else if (value.length > 4) { value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8); }
                  e.target.value = value;
              });
 
+             // *** NEW: Manual DOB Input Focus/Click Listener to show OSK ***
+             manualDobInput.addEventListener('focus', function() {
+                 console.log("Manual DOB input focused.");
+                 safeShowOsk(); // Request KORONA OSK
+             });
+             manualDobInput.addEventListener('click', function() {
+                 console.log("Manual DOB input clicked.");
+                 safeShowOsk(); // Also request on click for robustness
+             });
+             // *** END NEW ***
+
             // Manual Verify Button Listener
             manualVerifyButton.addEventListener('click', function() {
-                processingScan = false;
+                if (processingScan) return; // Prevent click while processing scan
+                processingScan = true; // Set flag
+
                 const manualDobValue = manualDobInput.value.trim();
                 console.log("Manual verify clicked. DOB:", manualDobValue);
                 const dateFormat = /^\d{2}\/\d{2}\/\d{4}$/;
                 if (!dateFormat.test(manualDobValue)) {
-                    displayError("Invalid date format. Please use MM/DD/YYYY.", false);
-                    manualDobInput.focus();
+                    displayError("Invalid date format. Please use MM/DD/YYYY.", false); // Allow retry
+                    manualDobInput.focus(); // Keep focus for correction
+                    processingScan = false; // Reset flag
                     return;
                 }
                 disableInputs();
@@ -252,7 +261,7 @@
                 verifyIdOnBackend({ manualDob: manualDobValue });
             });
 
-            // Acknowledge Button Listener
+            // Acknowledge Button Listener (for non-retryable errors)
             acknowledgeButton.addEventListener('click', function() {
                 console.log("Acknowledge button clicked.");
                 safeBackToKorona();
@@ -263,22 +272,22 @@
         async function verifyIdOnBackend(payload) {
             clearMessages();
             if(instructionsDiv) instructionsDiv.textContent = "Verifying...";
-
             console.log("Sending payload to backend:", JSON.stringify(payload));
 
-            // Check if we are in browser mode - if so, simulate backend call for testing UI
-             if (typeof korona_plugin_api === 'undefined') {
+            // Check if running outside KORONA (Browser Mode simulation)
+             if (typeof korona_plugin_api === 'undefined' || !korona_plugin_api) {
                  console.warn("Simulating backend call in browser mode...");
-                 processingScan = false; // Reset flag
                  // Simulate a delay
                  await new Promise(resolve => setTimeout(resolve, 1000));
-                 // Simulate a response (e.g., success for layout check)
-                 // To test failure UI: change success: false and add a message
-                 handleVerificationResult({ success: true, message: "Simulated Success (Browser Mode)" });
-                 // handleVerificationResult({ success: false, message: "DENY SALE - CUSTOMER IS UNDER 21" }); // Example failure test
-                 return;
-             }
+                 // Simulate a response (change for testing different scenarios)
+                 // let simulatedResult = { success: true, message: "Simulated Success (Browser Mode)" };
+                 let simulatedResult = { success: false, message: "DENY SALE - CUSTOMER IS UNDER 21", details: {dob_parsed: "2005-01-01"} };
+                 // let simulatedResult = { success: false, message: "DENY SALE - CUSTOMER'S ID IS EXPIRED", details: {exp_parsed: "2022-01-01"}};
+                 // let simulatedResult = { success: false, message: "Error Reading ID: Could not parse DOB/EXP from scan." };
 
+                 handleVerificationResult(simulatedResult);
+                 return; // Stop here in browser mode
+             }
 
             // --- Actual Backend Call (only if KORONA API exists) ---
             try {
@@ -287,70 +296,112 @@
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                const responseText = await response.text();
-                console.log("Raw backend response:", responseText);
-                processingScan = false; // Reset flag
+
+                const responseText = await response.text(); // Get text first for better debugging
+                console.log(`Backend response status: ${response.status}`);
+                console.log("Raw backend response text:", responseText);
 
                 if (!response.ok) {
-                    let errorMsg = `Backend error: ${response.status} ${response.statusText}`;
-                    try { errorMsg = JSON.parse(responseText).message || errorMsg; } catch (e) {}
-                    throw new Error(errorMsg);
+                    // Try to parse error message from JSON response, otherwise use status text
+                    let errorMsg = `Backend Error: ${response.status} ${response.statusText || 'Unknown Error'}`;
+                    try {
+                        const errorJson = JSON.parse(responseText);
+                        errorMsg = errorJson.message || errorMsg; // Use message from backend if available
+                    } catch (parseError) {
+                         // Ignore if response body is not valid JSON
+                         console.warn("Could not parse error response as JSON.");
+                    }
+                     // Log specific backend error before throwing
+                    console.error(`Backend returned error status ${response.status}: ${errorMsg}`);
+                    throw new Error(errorMsg); // Throw error to be caught below
                 }
+
+                // If response.ok, parse the JSON
                 const result = JSON.parse(responseText);
-                handleVerificationResult(result); // Handle success or logical failure
+                console.log("Parsed backend response JSON:", result);
+                handleVerificationResult(result); // Handle success or logical failure (like underage)
 
             } catch (error) {
-                 console.error("Error verifying ID:", error);
-                 const errorMsg = error.message || "Communication error.";
-                 displayError(`System Error: ${errorMsg}`, false); // Allow retry on comms error
-                 enableInputs();
-                 processingScan = false;
+                 // Catches network errors (fetch failed) or errors thrown from !response.ok
+                 console.error("Error during backend communication or processing response:", error);
+                 // Display a user-friendly message, potentially using error.message if it's informative
+                 let displayErrorMessage = `System Error: ${error.message || 'Failed to connect to verification service.'}`;
+                 // Avoid showing overly technical messages like "Load failed" directly if possible
+                 if (error.message && (error.message.toLowerCase().includes('load failed') || error.message.toLowerCase().includes('failed to fetch'))) {
+                     displayErrorMessage = "System Error: Could not reach verification service. Check connection.";
+                 }
+                 displayError(displayErrorMessage, false); // Allow retry on communication errors
+                 enableInputs(); // Re-enable inputs
+                 processingScan = false; // Reset flag
             }
         }
 
-        // --- Handling Backend Result ---
+        // --- Handling Verification Result ---
         function handleVerificationResult(result) {
-            processingScan = false; // Ensure flag is reset
+            processingScan = false; // Ensure flag is reset here
 
             if (result.success === true) {
                 console.log("Verification Successful:", result.message);
                 displaySuccess(`Verification Success: ${result.message}`);
-                safeAddKoronaReceiptInfo();
+                safeAddKoronaReceiptInfo(); // Add receipt info on success
+                // Automatically return to POS after a short delay
                 setTimeout(() => {
                      console.log("Returning control to KORONA POS after success.");
                      safeBackToKorona();
-                }, 1500);
+                }, 1500); // 1.5 second delay
              } else {
+                 // Handle Verification Failures (Underage, Expired, Parsing Error)
                  console.warn("Verification Failed:", result.message);
-                 let failureReason = "VERIFICATION FAILED - SALE DENIED";
-                 const backendMessage = result.message || "";
-                 let allowRetry = false;
+                 let failureReason = "VERIFICATION FAILED - SALE DENIED"; // Default
+                 const backendMessage = result.message || "No reason provided.";
+                 let allowRetry = false; // Default to not allowing retry unless it's a parsing error
 
-                 if (backendMessage.toUpperCase().includes("UNDERAGE")) { failureReason = "DENY SALE - CUSTOMER IS UNDER 21"; }
-                 else if (backendMessage.toUpperCase().includes("EXPIRED")) { failureReason = "DENY SALE - CUSTOMER'S ID IS EXPIRED"; }
-                 else if (backendMessage.toLowerCase().includes("error reading id") || backendMessage.toLowerCase().includes("could not") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date") || backendMessage.toLowerCase().includes("format")) {
-                     failureReason = `ERROR READING ID/DATE: ${backendMessage}. Check input/scan or use manual entry.`;
-                     if(errorArea) errorArea.style.textTransform = 'none';
-                     allowRetry = true;
-                 } else if (backendMessage) { failureReason = backendMessage.toUpperCase(); }
+                 // Use specific messages from backend if available and customize display
+                 if (backendMessage.toUpperCase().includes("UNDER 21")) {
+                     failureReason = "DENY SALE - CUSTOMER IS UNDER 21";
+                 } else if (backendMessage.toUpperCase().includes("EXPIRED")) {
+                      failureReason = "DENY SALE - CUSTOMER'S ID IS EXPIRED";
+                 } else if (backendMessage.toLowerCase().includes("error reading id") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date") || backendMessage.toLowerCase().includes("format") || backendMessage.toLowerCase().includes("could not find")) {
+                     // More detailed error for parsing/reading issues
+                     failureReason = `${backendMessage}`; // Use backend message directly
+                     allowRetry = true; // Allow retry for input/scan errors
+                     if(errorArea) errorArea.style.textTransform = 'none'; // Don't uppercase detailed errors
+                 } else {
+                     // Use the backend message directly if it's something else
+                     failureReason = backendMessage.toUpperCase();
+                 }
 
-                 displayError(failureReason, !allowRetry); // Show acknowledge only if not retryable
+                 displayError(failureReason, !allowRetry); // Show acknowledge button ONLY if retry is NOT allowed
 
                  if (allowRetry) {
-                     if(instructionsDiv) instructionsDiv.textContent = "Error reading ID or date. Please try again or use manual entry.";
-                     enableInputs();
+                     if(instructionsDiv) instructionsDiv.textContent = "Error processing ID. Please try again or use manual entry.";
+                     enableInputs(); // Re-enable inputs for retry
                  } else {
-                     if(instructionsDiv) instructionsDiv.textContent = "Verification Failed. Remove restricted items or cancel transaction.";
+                     // For non-retryable errors (underage, expired), hide inputs and show acknowledge button
+                     if(instructionsDiv) instructionsDiv.textContent = "Verification Failed. Acknowledge to return to POS.";
                      if(scanSectionDiv) scanSectionDiv.classList.add('hidden');
                      if(manualEntrySectionDiv) manualEntrySectionDiv.classList.add('hidden');
+                     if(acknowledgeButton) acknowledgeButton.classList.remove('hidden'); // Ensure acknowledge is shown
                  }
             }
         }
 
         // --- Safe Wrappers for KORONA API Calls ---
+        function safeShowOsk() { // *** NEW WRAPPER ***
+             try {
+                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.showOsk) {
+                     console.log("Requesting KORONA OSK to show.");
+                     korona_plugin_api.showOsk();
+                 } else {
+                     console.warn("Cannot call showOsk() - KORONA API not available.");
+                 }
+             } catch(e) { console.error("Error calling showOsk:", e); }
+        }
+
         function safeBackToKorona() {
              try {
                  if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.backToKorona) {
+                     console.log("Calling backToKorona().");
                      korona_plugin_api.backToKorona();
                  } else {
                      console.warn("Cannot call backToKorona() - KORONA API not available.");
@@ -358,13 +409,18 @@
                  }
              } catch(e) { console.error("Error calling backToKorona:", e); }
         }
+
         function safeAddKoronaReceiptInfo() {
+            // Optional: Customize the key/value added to the receipt
+            const verificationTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const receiptInfoPayload = {
+                 key: "Age Verified", // Keep key concise
+                 value: `OK @ ${verificationTimestamp}`
+            };
              try {
                  if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.response?.addReceiptAdditionalInfo) {
-                     korona_plugin_api.response.addReceiptAdditionalInfo({
-                         key: "AgeVerification",
-                         value: `Verified OK - ${new Date().toLocaleTimeString()}`
-                     });
+                      console.log("Adding receipt info:", receiptInfoPayload);
+                     korona_plugin_api.response.addReceiptAdditionalInfo(receiptInfoPayload);
                  } else {
                      console.warn("Cannot add receipt info - KORONA API not available.");
                  }
@@ -380,13 +436,18 @@
         }
         function enableInputs() {
             // Ensure elements exist before trying to enable/focus
-            if(scanInput) { scanInput.disabled = false; scanInput.value = ''; scanInput.focus(); }
-            if(manualDobInput) manualDobInput.disabled = false;
+            if(scanInput) { scanInput.disabled = false; scanInput.value = ''; /* Don't refocus scan automatically */ }
+            if(manualDobInput) { manualDobInput.disabled = false; manualDobInput.value = ''; /* Clear manual input on retry */ }
             if(manualVerifyButton) manualVerifyButton.disabled = false;
+            // Focus the scan input by default when enabling after an error
+            if(scanInput) scanInput.focus();
         }
         function displaySuccess(message) {
             clearMessages();
             if(resultArea) { resultArea.textContent = message; resultArea.classList.remove('hidden'); }
+            // Hide input sections on success before returning
+            if(scanSectionDiv) scanSectionDiv.classList.add('hidden');
+            if(manualEntrySectionDiv) manualEntrySectionDiv.classList.add('hidden');
         }
         function displayError(message, showAcknowledge) {
             clearMessages();
@@ -395,7 +456,7 @@
         }
          function displayWarning(message) {
              clearMessages();
-             if(warningArea) { // Use dedicated warning area now
+             if(warningArea) {
                  warningArea.textContent = message;
                  warningArea.classList.remove('hidden');
              }
@@ -407,15 +468,17 @@
                   errorArea.classList.remove('hidden');
                   errorArea.style.textTransform = 'none'; // Don't uppercase fatal errors
               }
+              // Hide everything else on fatal error
               if(scanSectionDiv) scanSectionDiv.classList.add('hidden');
               if(manualEntrySectionDiv) manualEntrySectionDiv.classList.add('hidden');
               if(acknowledgeButton) acknowledgeButton.classList.add('hidden');
+              if(instructionsDiv) instructionsDiv.classList.add('hidden');
          }
 
         function clearMessages() {
             if(resultArea) { resultArea.textContent = ''; resultArea.classList.add('hidden'); }
-            if(errorArea) { errorArea.textContent = ''; errorArea.classList.add('hidden'); errorArea.style.textTransform = 'uppercase'; }
-            if(warningArea) { warningArea.textContent = ''; warningArea.classList.add('hidden'); } // Clear warning area
+            if(errorArea) { errorArea.textContent = ''; errorArea.classList.add('hidden'); errorArea.style.textTransform = 'uppercase'; } // Reset transform
+            if(warningArea) { warningArea.textContent = ''; warningArea.classList.add('hidden'); }
             if(acknowledgeButton) acknowledgeButton.classList.add('hidden');
         }
 
