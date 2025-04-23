@@ -6,6 +6,7 @@
     <title>Age Verification</title>
 
     <!-- Reference to KORONA Plugin API Library -->
+    <!-- Make sure 'korona-plugin-api.js' is in the same directory or provide the correct path -->
     <script type="text/javascript" src="korona-plugin-api.js"></script>
 
     <style>
@@ -153,23 +154,31 @@
         }
 
         function setupListeners() {
-            // Scan Input Listener
-            scanInput.addEventListener('keypress', function(event) {
+            // Scan Input Listener (Using keydown for better Enter detection)
+            scanInput.addEventListener('keydown', function(event) {
+                // Check if the key pressed is 'Enter'
+                console.log(`Keydown detected: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`); // Debugging line
                 if (event.key === 'Enter' || event.keyCode === 13) {
-                    event.preventDefault();
-                    const scannedData = scanInput.value.trim();
-                    console.log("Scanner input received:", scannedData);
-                    if (scannedData) {
-                        disableInputs();
-                        instructionsDiv.textContent = "Processing scanned data...";
-                        verifyIdOnBackend({ scanData: scannedData }); // Send scanData payload
-                    } else {
-                        console.log("Scan input was empty.");
-                        displayError("Scan input empty. Please scan again.", false); // Don't show acknowledge yet
-                        scanInput.focus();
-                    }
+                    event.preventDefault(); // Prevent default form submission/newline behavior
+
+                    // Use a small timeout to ensure the input value is fully updated before reading
+                    setTimeout(() => {
+                        const scannedData = scanInput.value.trim();
+                        console.log("Scanner input value after Enter:", scannedData);
+
+                        if (scannedData) {
+                            disableInputs();
+                            instructionsDiv.textContent = "Processing scanned data...";
+                            verifyIdOnBackend({ scanData: scannedData }); // Send scanData payload
+                        } else {
+                            console.log("Scan input was empty after Enter.");
+                            // Optionally display a message to rescan if needed
+                        }
+                    }, 50); // 50ms delay - usually enough for value to update
+
                 }
             });
+
 
             // Manual DOB Input Formatting (Optional but helpful)
              manualDobInput.addEventListener('input', function(e) {
@@ -238,7 +247,7 @@
                  console.error("Error verifying ID:", error);
                  const errorMsg = error.message || "Communication error with verification system.";
                  // Display specific error, allow retry
-                 displayError(`System Error: ${errorMsg}. Please try again or contact support.`, false);
+                 displayError(`System Error: ${errorMsg}. Please try again or contact support.`, false); // Don't show acknowledge on system errors initially
                  enableInputs(); // Re-enable on error
             }
         }
@@ -259,32 +268,34 @@
                  // FAILURE CASE - Determine Specific Reason
                  console.warn("Verification Failed:", result.message);
                  let failureReason = "VERIFICATION FAILED - SALE DENIED"; // Default uppercase
-                 const backendMessage = result.message || "";
+                 const backendMessage = result.message || ""; // Ensure message is a string
+                 let allowRetry = false; // Flag to control if inputs are re-enabled
 
                  // Check for specific failure reasons and set exact messages
                  if (backendMessage.toUpperCase().includes("UNDERAGE")) {
                      failureReason = "DENY SALE - CUSTOMER IS UNDER 21";
                  } else if (backendMessage.toUpperCase().includes("EXPIRED")) {
                      failureReason = "DENY SALE - CUSTOMER'S ID IS EXPIRED";
-                 } else if (backendMessage.toLowerCase().includes("could not read") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date")) {
+                 } else if (backendMessage.toLowerCase().includes("error reading id") || backendMessage.toLowerCase().includes("could not read") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date")) {
                     // Keep original error message for parsing/reading issues
-                     failureReason = `ERROR READING ID: ${backendMessage}. Please check the ID and try scanning again or use manual entry.`;
+                     failureReason = `ERROR READING ID: ${backendMessage}. Check ID/scan or use manual entry.`;
                      errorArea.style.textTransform = 'none'; // Don't force uppercase for this specific error
-                     enableInputs(); // Allow retry for parsing errors
+                     allowRetry = true; // Allow retry for parsing/reading errors
                  } else if (backendMessage) {
                       // Use the backend message directly if it's another type of failure
                       failureReason = backendMessage.toUpperCase();
                  }
 
-                 displayError(failureReason, true); // Show specific error and acknowledge button
+                 displayError(failureReason, !allowRetry); // Show specific error, only force acknowledge if NOT a retryable error
 
                  // Adjust UI based on error type
-                 if (!failureReason.startsWith("ERROR READING ID")) {
+                 if (allowRetry) {
+                     instructionsDiv.textContent = "Error reading ID. Please try again or use manual entry.";
+                     enableInputs(); // Re-enable inputs for retry
+                 } else {
                      instructionsDiv.textContent = "Verification Failed. Remove restricted items or cancel transaction.";
                      scanSectionDiv.classList.add('hidden'); // Hide scan section on definitive failure
                      manualEntrySectionDiv.classList.add('hidden'); // Hide manual section on definitive failure
-                 } else {
-                     instructionsDiv.textContent = "Error reading ID. Please try again or use manual entry.";
                  }
             }
         }
@@ -322,7 +333,7 @@
 
         function displayError(message, showAcknowledge) {
             clearMessages();
-            errorArea.textContent = message;
+            errorArea.textContent = message; // Display the determined failure reason
             errorArea.classList.remove('hidden');
             if(showAcknowledge) {
                  acknowledgeButton.classList.remove('hidden');
