@@ -1,102 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Age Verification</title>
-
-    <!-- Reference to KORONA Plugin API Library -->
-    <!-- Make sure 'korona-plugin-api.js' is in the same directory or provide the correct path -->
-    <script type="text/javascript" src="korona-plugin-api.js"></script>
-
-    <style>
-        /* Minimal Modern Styling (Same as before) */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 90vh;
-            background-color: #f4f7f9;
-            color: #333;
-            margin: 20px;
-            text-align: center;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 20px 30px; /* Slightly reduced padding */
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 100%;
-        }
-        h1 { color: #2a3b4c; margin-bottom: 20px; }
-        #instructions, #scan-area, #manual-entry-area, #result-area, #error-area {
-            margin-top: 15px; /* Reduced margin */
-            padding: 10px;    /* Reduced padding */
-            border-radius: 5px;
-        }
-        #instructions { font-size: 1.1em; color: #555; }
-        #scan-area input[type="text"], #manual-entry-area input[type="text"] {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: 70%; /* Adjust as needed */
-            margin-bottom: 10px;
-            font-size: 1em;
-        }
-         label { display: block; margin-bottom: 5px; font-weight: bold;}
-        #result-area { border: 1px solid #d1e7dd; background-color: #f0fff4; color: #0f5132; font-weight: bold; }
-        #error-area { border: 1px solid #f5c6cb; background-color: #fff0f1; color: #842029; font-weight: bold; text-transform: uppercase; }
-        .hidden { display: none; }
-        button {
-            background-color: #007bff; color: white; padding: 10px 18px; border: none;
-            border-radius: 5px; cursor: pointer; font-size: 0.95em; margin-top: 10px;
-            transition: background-color 0.2s ease; margin-left: 5px; margin-right: 5px;
-        }
-        button:hover { background-color: #0056b3; }
-        button#acknowledge-button { background-color: #6c757d; }
-        button#acknowledge-button:hover { background-color: #5a6268; }
-        hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 25px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Scan Customer's ID - Age Verification Required</h1>
-
-        <!-- Scan Section -->
-        <div id="scan-section">
-             <div id="instructions">
-                 Please scan the barcode on the back of the customer's Driver's License.
-             </div>
-             <div id="scan-area">
-                 <label for="scan-input">Scanner Input:</label>
-                 <input type="text" id="scan-input" name="scan-input" autocomplete="off" autofocus>
-             </div>
-        </div>
-
-        <hr>
-
-        <!-- Manual Entry Section -->
-        <div id="manual-entry-section">
-             <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label>
-             <div id="manual-entry-area">
-                 <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10">
-                 <button id="manual-verify-button">Verify Manual Date</button>
-             </div>
-             <div id="manual-entry-instructions" style="font-size: 0.9em; color: #555; margin-top: 5px;">
-                (Use only if scan fails *and* you have visually verified the ID is not expired)
-             </div>
-        </div>
-
-        <!-- Result/Error Area -->
-        <div id="result-area" class="hidden"></div>
-        <div id="error-area" class="hidden"></div>
-        <button id="acknowledge-button" class="hidden">Acknowledge & Return to POS</button>
-
-    </div>
-
     <!-- JavaScript -->
     <script>
         // --- Configuration ---
@@ -115,6 +16,9 @@
         const acknowledgeButton = document.getElementById('acknowledge-button');
         const scanSectionDiv = document.getElementById('scan-section');
         const manualEntrySectionDiv = document.getElementById('manual-entry-section');
+
+        // Flag to prevent double submission if both keydown/keyup fire for Enter
+        let processingScan = false;
 
         // --- KORONA Plugin Initialization ---
         window.onload = function() {
@@ -139,7 +43,7 @@
 
                 } catch (error) {
                     console.error("Error during KORONA Plugin API initialization:", error);
-                    displayError("Initialization Error: Could not process KORONA data.", true); // Force show acknowledge
+                    displayError("Initialization Error: Could not process KORONA data.", true);
                 }
             });
         };
@@ -153,36 +57,63 @@
             return receipt.sales.some(item => item.sector?.number === REQUIRED_SECTOR_NUMBER);
         }
 
-        function setupListeners() {
-            // Scan Input Listener (Using keydown for better Enter detection)
-            scanInput.addEventListener('keydown', function(event) {
-                // Check if the key pressed is 'Enter'
-                console.log(`Keydown detected: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`); // Debugging line
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    event.preventDefault(); // Prevent default form submission/newline behavior
+        function handleScanInputEnter(event) {
+            // Central function to handle Enter press from scanner input
+            console.log(`Handling Enter Key Event Type: ${event.type}`); // Log which event fired
 
-                    // Use a small timeout to ensure the input value is fully updated before reading
-                    setTimeout(() => {
-                        const scannedData = scanInput.value.trim();
-                        console.log("Scanner input value after Enter:", scannedData);
+             // Check if the key pressed is 'Enter'
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                event.preventDefault(); // Prevent default behavior
 
-                        if (scannedData) {
-                            disableInputs();
-                            instructionsDiv.textContent = "Processing scanned data...";
-                            verifyIdOnBackend({ scanData: scannedData }); // Send scanData payload
-                        } else {
-                            console.log("Scan input was empty after Enter.");
-                            // Optionally display a message to rescan if needed
-                        }
-                    }, 50); // 50ms delay - usually enough for value to update
-
+                // Check processing flag to avoid double submission
+                if (processingScan) {
+                    console.log("Already processing scan, ignoring duplicate Enter event.");
+                    return;
                 }
+                processingScan = true; // Set flag
+
+                // Use a small timeout to ensure the input value is fully updated
+                setTimeout(() => {
+                    const scannedData = scanInput.value.trim();
+                    console.log("Scanner input value after Enter processing:", scannedData);
+
+                    if (scannedData) {
+                        disableInputs();
+                        instructionsDiv.textContent = "Processing scanned data...";
+                        verifyIdOnBackend({ scanData: scannedData });
+                    } else {
+                        console.log("Scan input was empty after Enter.");
+                        displayError("Scan input empty. Please scan again.", false);
+                        enableInputs(); // Re-enable if input was empty
+                        processingScan = false; // Reset flag if input was empty
+                    }
+                    // Reset flag slightly later in case verifyIdOnBackend is very fast (though unlikely needed)
+                    // setTimeout(() => { processingScan = false; }, 200);
+                }, 100); // Increased delay slightly to 100ms
+
+            } else {
+                 // If another key triggered the event, reset the processing flag just in case
+                 processingScan = false;
+            }
+        }
+
+
+        function setupListeners() {
+            // --- Scan Input Listeners (keydown and keyup) ---
+            scanInput.addEventListener('keydown', (event) => {
+                 console.log(`>> keydown event: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`); // More verbose logging
+                 handleScanInputEnter(event);
+            });
+            scanInput.addEventListener('keyup', (event) => {
+                 console.log(`>> keyup event: Key='${event.key}', Code='${event.code}', keyCode=${event.keyCode}`); // More verbose logging
+                 // Keyup might be more reliable in some environments for Enter
+                 // handleScanInputEnter(event); // We call the same handler
             });
 
 
-            // Manual DOB Input Formatting (Optional but helpful)
+            // --- Manual DOB Input Formatting ---
              manualDobInput.addEventListener('input', function(e) {
-                 let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                 let value = e.target.value.replace(/\D/g, '');
                  if (value.length > 2 && value.length <= 4) {
                      value = value.slice(0, 2) + '/' + value.slice(2);
                  } else if (value.length > 4) {
@@ -192,34 +123,33 @@
              });
 
 
-            // Manual Verify Button Listener
+            // --- Manual Verify Button Listener ---
             manualVerifyButton.addEventListener('click', function() {
+                // Reset processing flag if manual is used
+                processingScan = false;
                 const manualDobValue = manualDobInput.value.trim();
                 console.log("Manual verify clicked. DOB:", manualDobValue);
-
-                // Basic client-side format validation
                 const dateFormat = /^\d{2}\/\d{2}\/\d{4}$/;
                 if (!dateFormat.test(manualDobValue)) {
-                    displayError("Invalid date format. Please use MM/DD/YYYY.", false); // Don't show acknowledge yet
+                    displayError("Invalid date format. Please use MM/DD/YYYY.", false);
                     manualDobInput.focus();
                     return;
                 }
-
                 disableInputs();
                 instructionsDiv.textContent = "Processing manual date...";
-                verifyIdOnBackend({ manualDob: manualDobValue }); // Send manualDob payload
+                verifyIdOnBackend({ manualDob: manualDobValue });
             });
 
-            // Acknowledge Button Listener
+            // --- Acknowledge Button Listener ---
             acknowledgeButton.addEventListener('click', function() {
                 console.log("Acknowledge button clicked. Returning to KORONA.");
                 korona_plugin_api.backToKorona();
             });
         }
 
-        async function verifyIdOnBackend(payload) { // Accepts the payload directly
+        async function verifyIdOnBackend(payload) {
             clearMessages();
-            instructionsDiv.textContent = "Verifying..."; // General processing message
+            instructionsDiv.textContent = "Verifying...";
 
             console.log("Sending payload to backend:", JSON.stringify(payload));
 
@@ -227,11 +157,13 @@
                 const response = await fetch(BACKEND_VERIFY_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(payload) // Send the prepared payload
+                    body: JSON.stringify(payload)
                 });
 
                 const responseText = await response.text();
                 console.log("Raw backend response:", responseText);
+
+                processingScan = false; // Reset flag after backend call attempt
 
                 if (!response.ok) {
                     let errorMsg = `Backend verification failed: ${response.status} ${response.statusText}`;
@@ -246,56 +178,50 @@
             } catch (error) {
                  console.error("Error verifying ID:", error);
                  const errorMsg = error.message || "Communication error with verification system.";
-                 // Display specific error, allow retry
-                 displayError(`System Error: ${errorMsg}. Please try again or contact support.`, false); // Don't show acknowledge on system errors initially
+                 displayError(`System Error: ${errorMsg}. Please try again or contact support.`, false);
                  enableInputs(); // Re-enable on error
+                 processingScan = false; // Reset flag on error
             }
         }
 
         function handleVerificationResult(result) {
+             processingScan = false; // Ensure flag is reset here too
             if (result.success === true) {
-                // SUCCESS CASE
                 console.log("Verification Successful:", result.message);
                 displaySuccess(`Verification Success: ${result.message}`);
-                addKoronaReceiptInfo(); // Add info if successful
-                // Briefly show success message then return
+                addKoronaReceiptInfo();
                 setTimeout(() => {
                      console.log("Returning control to KORONA POS after success.");
                      korona_plugin_api.backToKorona();
                 }, 1500);
 
              } else {
-                 // FAILURE CASE - Determine Specific Reason
                  console.warn("Verification Failed:", result.message);
-                 let failureReason = "VERIFICATION FAILED - SALE DENIED"; // Default uppercase
-                 const backendMessage = result.message || ""; // Ensure message is a string
-                 let allowRetry = false; // Flag to control if inputs are re-enabled
+                 let failureReason = "VERIFICATION FAILED - SALE DENIED";
+                 const backendMessage = result.message || "";
+                 let allowRetry = false;
 
-                 // Check for specific failure reasons and set exact messages
                  if (backendMessage.toUpperCase().includes("UNDERAGE")) {
                      failureReason = "DENY SALE - CUSTOMER IS UNDER 21";
                  } else if (backendMessage.toUpperCase().includes("EXPIRED")) {
                      failureReason = "DENY SALE - CUSTOMER'S ID IS EXPIRED";
-                 } else if (backendMessage.toLowerCase().includes("error reading id") || backendMessage.toLowerCase().includes("could not read") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date")) {
-                    // Keep original error message for parsing/reading issues
+                 } else if (backendMessage.toLowerCase().includes("error reading id") || backendMessage.toLowerCase().includes("could not") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date")) {
                      failureReason = `ERROR READING ID: ${backendMessage}. Check ID/scan or use manual entry.`;
-                     errorArea.style.textTransform = 'none'; // Don't force uppercase for this specific error
-                     allowRetry = true; // Allow retry for parsing/reading errors
+                     errorArea.style.textTransform = 'none';
+                     allowRetry = true;
                  } else if (backendMessage) {
-                      // Use the backend message directly if it's another type of failure
                       failureReason = backendMessage.toUpperCase();
                  }
 
-                 displayError(failureReason, !allowRetry); // Show specific error, only force acknowledge if NOT a retryable error
+                 displayError(failureReason, !allowRetry);
 
-                 // Adjust UI based on error type
                  if (allowRetry) {
                      instructionsDiv.textContent = "Error reading ID. Please try again or use manual entry.";
-                     enableInputs(); // Re-enable inputs for retry
+                     enableInputs();
                  } else {
                      instructionsDiv.textContent = "Verification Failed. Remove restricted items or cancel transaction.";
-                     scanSectionDiv.classList.add('hidden'); // Hide scan section on definitive failure
-                     manualEntrySectionDiv.classList.add('hidden'); // Hide manual section on definitive failure
+                     scanSectionDiv.classList.add('hidden');
+                     manualEntrySectionDiv.classList.add('hidden');
                  }
             }
         }
@@ -321,8 +247,8 @@
             scanInput.disabled = false;
             manualDobInput.disabled = false;
             manualVerifyButton.disabled = false;
-            scanInput.value = ''; // Clear scan input on enabling
-            scanInput.focus(); // Focus scan input by default
+            scanInput.value = '';
+            scanInput.focus();
         }
 
         function displaySuccess(message) {
@@ -333,7 +259,7 @@
 
         function displayError(message, showAcknowledge) {
             clearMessages();
-            errorArea.textContent = message; // Display the determined failure reason
+            errorArea.textContent = message;
             errorArea.classList.remove('hidden');
             if(showAcknowledge) {
                  acknowledgeButton.classList.remove('hidden');
@@ -346,7 +272,7 @@
             errorArea.textContent = '';
             errorArea.classList.add('hidden');
             acknowledgeButton.classList.add('hidden');
-             errorArea.style.textTransform = 'uppercase'; // Reset text transform
+             errorArea.style.textTransform = 'uppercase';
         }
 
     </script>
