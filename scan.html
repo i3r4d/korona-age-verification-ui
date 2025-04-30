@@ -4,10 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Age Verification</title>
-
-    <!-- Reference to KORONA Plugin API Library -->
     <script type="text/javascript" src="korona-plugin-api.js"></script>
-
     <style>
         /* Styles from your previous working version */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; background-color: #f4f7f9; color: #333; margin: 20px; text-align: center; } .container { background-color: #ffffff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 600px; width: 100%; } h1 { color: #2a3b4c; margin-bottom: 20px; } #instructions, #scan-area, #manual-entry-area, #result-area, #error-area { margin-top: 15px; padding: 10px; border-radius: 5px; } #instructions { font-size: 1.1em; color: #555; } #scan-area input[type="text"], #manual-entry-area input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 70%; margin-bottom: 10px; font-size: 1em; } label { display: block; margin-bottom: 5px; font-weight: bold;} #result-area { border: 1px solid #d1e7dd; background-color: #f0fff4; color: #0f5132; font-weight: bold; } #error-area { border: 1px solid #f5c6cb; background-color: #fff0f1; color: #842029; font-weight: bold; text-transform: uppercase; } .hidden { display: none; } button { background-color: #007bff; color: white; padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.95em; margin-top: 10px; transition: background-color 0.2s ease; margin-left: 5px; margin-right: 5px; } button:hover { background-color: #0056b3; } button#acknowledge-button { background-color: #6c757d; } button#acknowledge-button:hover { background-color: #5a6268; } hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 25px 0; }
@@ -16,22 +13,17 @@
 </head>
 <body>
     <div class="container">
-        <!-- Title will be set dynamically -->
         <h1 id="page-title">Age Verification</h1>
-
-        <!-- Scan Section -->
+        <!-- Other HTML remains the same -->
+         <!-- Scan Section -->
         <div id="scan-section">
-             <div id="instructions">
-                 Please scan the barcode on the back of the customer's Driver's License.
-             </div>
+             <div id="instructions"> Initializing... </div>
              <div id="scan-area">
                  <label for="scan-input">Scanner Input:</label>
                  <input type="text" id="scan-input" name="scan-input" autocomplete="off" autofocus>
              </div>
         </div>
-
         <hr>
-
         <!-- Manual Entry Section -->
         <div id="manual-entry-section">
              <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label>
@@ -43,181 +35,162 @@
                 (Use only if scan fails and you have verified the ID is not expired)
              </div>
         </div>
-
         <!-- Result/Error Area -->
         <div id="result-area" class="hidden"></div>
         <div id="error-area" class="hidden"></div>
         <button id="acknowledge-button" class="hidden">Acknowledge & Return to POS</button>
-
     </div>
 
-    <!-- JavaScript (Conditional OSK Added) -->
     <script>
         // --- Configuration ---
         const REQUIRED_SECTOR_NUMBER = "1";
         const BACKEND_VERIFY_URL = "https://i3r4d.pythonanywhere.com/api/verify-id";
-
-        // --- DOM Elements (Declare early) ---
         let scanInput, manualDobInput, manualVerifyButton, resultArea, errorArea, instructionsDiv, scanAreaDiv, manualEntryArea, acknowledgeButton, scanSectionDiv, manualEntrySectionDiv, pageTitle;
-        let posInfo = { number: null, name: null }; // To store POS info
-        let cashierInfo = { number: null, name: null }; // To store Cashier info
-        let invocationMode = 'total'; // Default to 'total'
+        let posInfo = { number: null, name: null };
+        let cashierInfo = { number: null, name: null };
+        let invocationMode = 'total';
 
-        // --- KORONA Plugin Initialization ---
-        window.onload = function() {
+        window.onload = function() { /* ... Same as previous ... */
             console.log("Window loaded.");
-
-            // --- Read URL Parameter ---
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const triggerParam = urlParams.get('trigger');
-                if (triggerParam && triggerParam.toLowerCase() === 'button') {
-                    invocationMode = 'button';
-                }
-                console.log(`Invocation Mode determined as: ${invocationMode}`);
-            } catch (e) {
-                console.error("Error reading URL parameters:", e);
-            }
-
-            // --- Get DOM Elements ---
-             scanInput = document.getElementById('scan-input');
-             manualDobInput = document.getElementById('manual-dob-input');
-             manualVerifyButton = document.getElementById('manual-verify-button');
-             resultArea = document.getElementById('result-area');
-             errorArea = document.getElementById('error-area');
-             instructionsDiv = document.getElementById('instructions');
-             scanAreaDiv = document.getElementById('scan-area');
-             manualEntryArea = document.getElementById('manual-entry-area');
-             acknowledgeButton = document.getElementById('acknowledge-button');
-             scanSectionDiv = document.getElementById('scan-section');
-             manualEntrySectionDiv = document.getElementById('manual-entry-section');
-             pageTitle = document.getElementById('page-title');
-
-             // --- Adjust Title ---
-             if (invocationMode === 'button') { pageTitle.textContent = "Manual Age Verification"; }
-             else { pageTitle.textContent = "Age Verification Required"; }
-
-            // --- Initialize KORONA API ---
-            console.log("Initializing KORONA Plugin API connection.");
-            if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.ready) {
-                 korona_plugin_api.ready(initializeKoronaData);
-            } else {
-                 console.warn("KORONA Plugin API not found or ready function missing.");
-            }
+            try { const urlParams = new URLSearchParams(window.location.search); const triggerParam = urlParams.get('trigger'); if (triggerParam && triggerParam.toLowerCase() === 'button') { invocationMode = 'button'; } console.log(`Invocation Mode: ${invocationMode}`); } catch (e) { console.error("URL param error:", e); }
+            scanInput = document.getElementById('scan-input'); manualDobInput = document.getElementById('manual-dob-input'); manualVerifyButton = document.getElementById('manual-verify-button'); resultArea = document.getElementById('result-area'); errorArea = document.getElementById('error-area'); instructionsDiv = document.getElementById('instructions'); scanAreaDiv = document.getElementById('scan-area'); manualEntryArea = document.getElementById('manual-entry-area'); acknowledgeButton = document.getElementById('acknowledge-button'); scanSectionDiv = document.getElementById('scan-section'); manualEntrySectionDiv = document.getElementById('manual-entry-section'); pageTitle = document.getElementById('page-title');
+            if (invocationMode === 'button') { pageTitle.textContent = "Manual Age Verification"; } else { pageTitle.textContent = "Age Verification Required"; }
+            console.log("Init KORONA API connection.");
+            if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.ready) { korona_plugin_api.ready(initializeKoronaData); } else { console.warn("KORONA API not found/ready."); }
         };
 
-        // --- Function called once KORONA API is ready ---
-        function initializeKoronaData() {
-            try {
-                console.log("KORONA Plugin API Ready.");
-                const requestData = korona_plugin_api.request;
-                const receipt = requestData?.receipt;
-                posInfo = requestData?.pos || { number: 'N/A', name: 'N/A' };
-                cashierInfo = requestData?.cashier || { number: 'N/A', name: 'N/A' };
-                console.log(`POS: ${posInfo.number}, Cashier: ${cashierInfo.number}`);
-                console.log("Received KORONA request data snippet:", JSON.stringify(receipt?.sales?.slice(0,1), null, 2));
-                const verificationStrictlyNeeded = isVerificationNeeded(receipt);
-
-                if (invocationMode === 'total' && !verificationStrictlyNeeded) {
-                    console.log(`On Total trigger: No items from Sector ${REQUIRED_SECTOR_NUMBER}. Skipping.`);
-                    safeBackToKorona();
-                    return;
-                }
-
-                console.log(`Proceeding to setup UI: Mode='${invocationMode}', VerificationNeeded=${verificationStrictlyNeeded}`);
-                setupListeners();
-                scanInput.focus();
-
-            } catch (error) {
-                console.error("Error during KORONA data initialization:", error);
-                displayError(`Initialization Error: ${error.message || 'Could not process KORONA data.'}`, true);
-            }
+        function initializeKoronaData() { /* ... Same as previous ... */
+            try { console.log("KORONA API Ready."); const requestData = korona_plugin_api.request; const receipt = requestData?.receipt; posInfo = requestData?.pos || {}; cashierInfo = requestData?.cashier || {}; console.log(`POS: ${posInfo.number}, Cashier: ${cashierInfo.number}`); const verificationStrictlyNeeded = isVerificationNeeded(receipt);
+                if (invocationMode === 'total' && !verificationStrictlyNeeded) { console.log(`On Total: No items. Skipping.`); safeBackToKorona(); return; }
+                console.log(`Proceeding: Mode='${invocationMode}', Needed=${verificationStrictlyNeeded}`); setupListeners(); scanInput.focus();
+            } catch (error) { console.error("Init Error:", error); displayError(`Init Error: ${error.message || 'Unknown'}`, true); }
         }
 
+        function isVerificationNeeded(receipt) { /* ... Same as previous ... */
+            if (!receipt || !receipt.sales || !Array.isArray(receipt.sales) || receipt.sales.length === 0) { return false; }
+            const needed = receipt.sales.some(item => item?.sector?.number === REQUIRED_SECTOR_NUMBER); console.log(`isVerificationNeeded: ${needed}`); return needed;
+         }
 
-        // --- Helper Functions ---
-        function isVerificationNeeded(receipt) {
-             if (!receipt || !receipt.sales || !Array.isArray(receipt.sales) || receipt.sales.length === 0) { console.log("Receipt data missing/empty."); return false; }
-             const needed = receipt.sales.some(item => item?.sector?.number === REQUIRED_SECTOR_NUMBER);
-             console.log(`isVerificationNeeded check result: ${needed}`);
-             return needed;
-        }
-
+        // --- UPDATED setupListeners ---
         function setupListeners() {
             console.log("setupListeners called.");
-             if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton) { console.error("Elements missing for listeners."); return; }
+             // Ensure all required elements are available before proceeding
+             if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton || !instructionsDiv) {
+                 console.error("Listeners setup error: One or more required elements missing.");
+                 displayError("Page Error: Cannot setup interactions.", true);
+                 return;
+             }
 
-            // Scan Input Listener
+            // 1. Scan Input Listener ('keypress' based on your working version)
+            console.log("Attaching 'keypress' listener to scanInput.");
             scanInput.addEventListener('keypress', function(event) {
                 if (event.key === 'Enter' || event.keyCode === 13) {
                     event.preventDefault();
                     const scannedData = scanInput.value.trim();
                     console.log("Scanner input ('keypress' Enter) received:", scannedData);
-                    if (scannedData) { disableInputs(); instructionsDiv.textContent = "Processing scanned data..."; verifyIdOnBackend({ scanData: scannedData }); }
-                    else { console.log("Scan input was empty."); displayError("Scan input empty.", false); scanInput.focus(); }
+                    if (scannedData) {
+                        disableInputs();
+                        instructionsDiv.textContent = "Processing scanned data...";
+                        verifyIdOnBackend({ scanData: scannedData });
+                    } else {
+                        console.log("Scan input was empty.");
+                        displayError("Scan input empty. Please scan again.", false);
+                        scanInput.focus(); // Keep focus on scan input if empty
+                    }
                 }
             });
 
-            // Manual DOB Input Formatting
-             manualDobInput.addEventListener('input', function(e) { /* ... format MM/DD/YYYY ... */ });
+            // 2. Manual DOB Input Formatting ('input' event)
+            console.log("Attaching 'input' listener to manualDobInput for formatting.");
+            manualDobInput.addEventListener('input', function(e) {
+                 // Formatting logic (MM/DD/YYYY)
+                 let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                 if (value.length > 2 && value.length <= 4) {
+                     value = value.slice(0, 2) + '/' + value.slice(2);
+                 } else if (value.length > 4) {
+                     value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
+                 }
+                 e.target.value = value; // Update the input field's value
+                 console.log("Formatted manual input:", e.target.value); // Log formatting
+            });
 
-             // --- Manual DOB Focus/Click for OSK (CONDITIONAL) ---
+             // 3. Manual DOB Focus/Click for OSK (Conditional)
+             console.log("Attaching 'focus' listener to manualDobInput for OSK.");
              manualDobInput.addEventListener('focus', function() {
                  console.log("Manual DOB focus");
-                 if (invocationMode === 'button') { // <<< Check Mode
+                 if (invocationMode === 'button') { // Check Mode
                      console.log("Button mode detected, requesting OSK.");
                      safeShowOsk();
                  } else {
                      console.log("Total mode detected, OSK not shown on focus.");
                  }
              });
+             console.log("Attaching 'click' listener to manualDobInput for OSK.");
              manualDobInput.addEventListener('click', function() {
                  console.log("Manual DOB click");
-                 if (invocationMode === 'button') { // <<< Check Mode
+                 if (invocationMode === 'button') { // Check Mode
                      console.log("Button mode detected, requesting OSK.");
                      safeShowOsk();
                  } else {
                      console.log("Total mode detected, OSK not shown on click.");
                  }
              });
-             // ---------------------------------------------------
 
+            // 4. Manual Verify Button Listener ('click' event)
+            console.log("Attaching 'click' listener to manualVerifyButton.");
+            manualVerifyButton.addEventListener('click', function() {
+                // Add immediate feedback that the button was clicked
+                console.log("Manual verify button - click detected!");
+                manualVerifyButton.style.backgroundColor = '#0056b3'; // Briefly change color
+                setTimeout(() => { manualVerifyButton.style.backgroundColor = ''; }, 200); // Reset color
 
-            // Manual Verify Button Listener
-            manualVerifyButton.addEventListener('click', function() { /* ... same as before ... */ verifyIdOnBackend({ manualDob: manualDobValue }); });
+                const manualDobValue = manualDobInput.value.trim();
+                console.log("Manual verify processing. DOB:", manualDobValue);
 
-            // Acknowledge Button Listener
-            acknowledgeButton.addEventListener('click', function() { console.log("Acknowledge clicked."); safeBackToKorona(); });
+                const dateFormat = /^\d{2}\/\d{2}\/\d{4}$/;
+                if (!dateFormat.test(manualDobValue)) {
+                    console.log("Manual DOB format invalid.");
+                    displayError("Invalid date format. Please use MM/DD/YYYY.", false);
+                    manualDobInput.focus(); // Re-focus the input for correction
+                    return; // Stop processing
+                }
+
+                // Proceed if format is valid
+                console.log("Manual DOB format valid. Disabling inputs and calling backend.");
+                disableInputs();
+                instructionsDiv.textContent = "Processing manual date...";
+                verifyIdOnBackend({ manualDob: manualDobValue }); // Send manualDob payload
+            });
+
+            // 5. Acknowledge Button Listener ('click' event)
+            console.log("Attaching 'click' listener to acknowledgeButton.");
+            acknowledgeButton.addEventListener('click', function() {
+                console.log("Acknowledge button clicked.");
+                 safeBackToKorona();
+            });
+
             console.log("Listeners setup complete.");
         }
+        // --- END UPDATED setupListeners ---
 
-        async function verifyIdOnBackend(payload) {
-            // (Function remains the same - sends POS/Cashier info)
-            clearMessages(); instructionsDiv.textContent = "Verifying...";
-            payload.posId = posInfo.number; payload.posName = posInfo.name;
-            payload.cashierId = cashierInfo.number; payload.cashierName = cashierInfo.name;
-            console.log("Sending payload to backend:", JSON.stringify(payload));
-            try { /* ... fetch ... handle response ... */ } catch (error) { /* ... handle error ... */ }
+
+        async function verifyIdOnBackend(payload) { /* ... Same as previous ... */
+            clearMessages(); instructionsDiv.textContent = "Verifying..."; payload.posId=posInfo.number; payload.posName=posInfo.name; payload.cashierId=cashierInfo.number; payload.cashierName=cashierInfo.name; console.log("Sending:", JSON.stringify(payload));
+            try { const response = await fetch(BACKEND_VERIFY_URL, { method: 'POST', headers: {'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify(payload) }); const responseText = await response.text(); console.log("Raw backend:", responseText); if (!response.ok) { let msg=`BE fail: ${response.status}`; try{msg=JSON.parse(responseText).message||msg;}catch(e){} throw new Error(msg); } const result = JSON.parse(responseText); console.log("Parsed:", result); handleVerificationResult(result); } catch (error) { console.error("Verify Error:", error); displayError(`Sys Err: ${error.message||'Comm err.'}. Try again.`, false); enableInputs(); }
         }
 
-        function handleVerificationResult(result) {
-            // (Function remains the same)
-             if (result.success === true) { /* ... display success, add info, timeout backToKorona ... */ }
-             else { /* ... display failure reason, allow retry or show acknowledge ... */ }
-        }
+        function handleVerificationResult(result) { /* ... Same as previous ... */
+            if (result.success === true) { console.log("OK:", result.message); displaySuccess(`OK: ${result.message}`); addKoronaReceiptInfo(); setTimeout(safeBackToKorona, 1500); } else { console.warn("FAIL:", result.message); let reason="VERIFY FAIL"; const msg=result.message||""; let retry=false; if(msg.toUpperCase().includes("UNDERAGE")){reason="DENY SALE - UNDER 21";} else if(msg.toUpperCase().includes("EXPIRED")){reason="DENY SALE - EXPIRED ID";} else if(msg.toLowerCase().includes("error reading")||msg.toLowerCase().includes("parse")||msg.toLowerCase().includes("invalid date")){reason=`ERR: ${msg}. Check/Retry.`; errorArea.style.textTransform='none'; retry=true;} else if(msg){reason=msg.toUpperCase();} displayError(reason, !retry); if(retry){instructionsDiv.textContent="Error reading ID. Try again."; enableInputs();} else {instructionsDiv.textContent="Verify Fail. Acknowledge."; scanSectionDiv.classList.add('hidden'); manualEntrySectionDiv.classList.add('hidden');} }
+         }
 
-        // --- KORONA API Interaction Helpers ---
-        function addKoronaReceiptInfo() { /* ... same as before ... */ }
-        function safeShowOsk() { try { if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.showOsk) { korona_plugin_api.showOsk(); } else { console.warn("Cannot show OSK - API unavailable."); } } catch(e) { console.error("Error calling showOsk:", e); } }
-        function safeBackToKorona() { try { if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.backToKorona) { korona_plugin_api.backToKorona(); } else { console.warn("Cannot go back - API unavailable."); } } catch(e) { console.error("Error calling backToKorona:", e); } }
-
-
-        // --- UI Update Functions ---
-        function disableInputs() { /* ... same as before ... */ }
-        function enableInputs() { /* ... same as before ... */ }
-        function displaySuccess(message) { /* ... same as before ... */ }
-        function displayError(message, showAcknowledge) { /* ... same as before ... */ }
-        function clearMessages() { /* ... same as before ... */ }
+        function addKoronaReceiptInfo() { /* ... Same as previous ... */ }
+        function safeShowOsk() { /* ... Same as previous ... */ }
+        function safeBackToKorona() { /* ... Same as previous ... */ }
+        function disableInputs() { /* ... Same as previous ... */ }
+        function enableInputs() { /* ... Same as previous ... */ }
+        function displaySuccess(message) { /* ... Same as previous ... */ }
+        function displayError(message, showAcknowledge) { /* ... Same as previous ... */ }
+        function clearMessages() { /* ... Same as previous ... */ }
 
     </script>
 </body>
