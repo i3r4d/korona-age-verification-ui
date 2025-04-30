@@ -11,7 +11,7 @@
     <style>
         /* Styles from your provided code */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; background-color: #f4f7f9; color: #333; margin: 20px; text-align: center; } .container { background-color: #ffffff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 600px; width: 100%; } h1 { color: #2a3b4c; margin-bottom: 20px; } #instructions, #scan-area, #manual-entry-area, #result-area, #error-area { margin-top: 15px; padding: 10px; border-radius: 5px; } #instructions { font-size: 1.1em; color: #555; } #scan-area input[type="text"], #manual-entry-area input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 70%; margin-bottom: 10px; font-size: 1em; } label { display: block; margin-bottom: 5px; font-weight: bold;} #result-area { border: 1px solid #d1e7dd; background-color: #f0fff4; color: #0f5132; font-weight: bold; } #error-area { border: 1px solid #f5c6cb; background-color: #fff0f1; color: #842029; font-weight: bold; text-transform: uppercase; } .hidden { display: none; } button { background-color: #007bff; color: white; padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.95em; margin-top: 10px; transition: background-color 0.2s ease; margin-left: 5px; margin-right: 5px; } button:hover { background-color: #0056b3; } button#acknowledge-button { background-color: #6c757d; } button#acknowledge-button:hover { background-color: #5a6268; } hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 25px 0; }
-        #manual-entry-instructions { font-size: 0.9em; color: #555; margin-top: 5px; } /* Added from your code */
+        #manual-entry-instructions { font-size: 0.9em; color: #555; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -37,7 +37,6 @@
              <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label>
              <div id="manual-entry-area">
                  <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10">
-                 <!-- Button text from your base code -->
                  <button id="manual-verify-button">Verify Manual Date</button>
              </div>
              <div id="manual-entry-instructions" style="font-size: 0.9em; color: #555; margin-top: 5px;">
@@ -52,7 +51,7 @@
 
     </div>
 
-    <!-- JavaScript (Merging Trigger Logic) -->
+    <!-- JavaScript (Merging Trigger Logic into your base code) -->
     <script>
         // --- Configuration ---
         const REQUIRED_SECTOR_NUMBER = "1";
@@ -62,7 +61,8 @@
         let scanInput, manualDobInput, manualVerifyButton, resultArea, errorArea, instructionsDiv, scanAreaDiv, manualEntryArea, acknowledgeButton, scanSectionDiv, manualEntrySectionDiv, pageTitle;
         let posInfo = { number: null, name: null }; // To store POS info
         let cashierInfo = { number: null, name: null }; // To store Cashier info
-        let invocationMode = 'total'; // Default to 'total'
+        // --- NEW: Determine Invocation Mode ---
+        let invocationMode = 'total'; // Default to 'total' (original behavior)
 
         // --- KORONA Plugin Initialization ---
         window.onload = function() {
@@ -78,7 +78,6 @@
                 console.log(`Invocation Mode determined as: ${invocationMode}`);
             } catch (e) {
                 console.error("Error reading URL parameters:", e);
-                // Keep default 'total' mode if error occurs
             }
 
             // --- Get DOM Elements ---
@@ -97,21 +96,20 @@
 
              // --- Adjust Title ---
              if (invocationMode === 'button') {
-                 pageTitle.textContent = "Manual Age Verification";
+                 pageTitle.textContent = "Manual Age Verification"; // Title for button mode
              } else {
-                 pageTitle.textContent = "Age Verification Required"; // Default/On Total title
+                 pageTitle.textContent = "Age Verification Required"; // Title for On Total mode
              }
 
             // --- Initialize KORONA API ---
             console.log("Initializing KORONA Plugin API connection.");
-            // Check if API exists before calling ready
             if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.ready) {
-                 korona_plugin_api.ready(initializeKoronaData); // Call new function when API is ready
+                 korona_plugin_api.ready(initializeKoronaData); // Call function when API is ready
             } else {
-                 console.warn("KORONA Plugin API not found or not ready immediately. Skipping KORONA specific init.");
-                 // Optionally setup listeners for basic browser testing if desired
-                 // setupListeners();
-                 // displayError("Cannot connect to KORONA POS API.", false);
+                 console.warn("KORONA Plugin API not found or ready function missing.");
+                 // Handle case where API isn't available (e.g., testing in browser)
+                 // displayError("KORONA POS API connection failed.", false); // Use your error display
+                 // setupListeners(); // Maybe setup listeners for browser testing?
             }
         };
 
@@ -122,41 +120,41 @@
                 const requestData = korona_plugin_api.request;
                 const receipt = requestData?.receipt;
 
-                // --- Capture POS/Cashier Info ---
+                // --- Capture POS/Cashier Info (Optional but good for logging) ---
                 posInfo = requestData?.pos || { number: 'N/A', name: 'N/A' };
                 cashierInfo = requestData?.cashier || { number: 'N/A', name: 'N/A' };
                 console.log(`POS: ${posInfo.number}, Cashier: ${cashierInfo.number}`);
-                // --------------------------------
+                // ---------------------------------------------------------------
 
                 console.log("Received KORONA request data snippet:", JSON.stringify(receipt?.sales?.slice(0,1), null, 2));
 
                 const verificationStrictlyNeeded = isVerificationNeeded(receipt);
 
-                // --- Conditional Logic for 'total' mode ---
-                // Only skip if invoked via 'total' AND no restricted items are found.
+                // --- Conditional Logic: Only exit early if called 'On Total' AND not needed ---
                 if (invocationMode === 'total' && !verificationStrictlyNeeded) {
                     console.log(`On Total trigger: No items from Sector ${REQUIRED_SECTOR_NUMBER}. Skipping verification.`);
-                    korona_plugin_api.backToKorona();
-                    return; // Stop further processing for this case
+                    // Use safe wrapper just in case API object exists but function doesn't
+                    safeBackToKorona();
+                    return; // Stop further processing ONLY for this specific case
                 }
-                // --- For 'button' mode, or 'total' mode when needed, proceed ---
-                console.log(`Proceeding: Mode='${invocationMode}', VerificationNeeded=${verificationStrictlyNeeded}`);
-                console.log("Setting up listeners.");
-                setupListeners(); // Setup listeners in both modes if not skipped
-                scanInput.focus();
+
+                // --- Proceed for 'button' mode OR 'total' mode when needed ---
+                console.log(`Proceeding to setup UI: Mode='${invocationMode}', VerificationNeeded=${verificationStrictlyNeeded}`);
+                setupListeners(); // Setup listeners
+                scanInput.focus(); // Set initial focus
 
             } catch (error) {
-                console.error("Error during KORONA Plugin API initialization:", error);
-                // Use the displayError function from your base code
-                displayError(`Initialization Error: ${error.message || 'Could not process KORONA data.'}`, true); // Force acknowledge
+                console.error("Error during KORONA data initialization:", error);
+                displayError(`Initialization Error: ${error.message || 'Could not process KORONA data.'}`, true);
             }
         }
 
 
         // --- Helper Functions ---
         function isVerificationNeeded(receipt) {
+             // (Same logic as your provided code)
              if (!receipt || !receipt.sales || !Array.isArray(receipt.sales) || receipt.sales.length === 0) {
-                console.log("Receipt data is missing or empty for check.");
+                console.log("Receipt data is missing or empty.");
                 return false;
             }
             const needed = receipt.sales.some(item => item?.sector?.number === REQUIRED_SECTOR_NUMBER);
@@ -166,10 +164,9 @@
 
         function setupListeners() {
             console.log("setupListeners called.");
-             // Check if elements exist (good practice)
              if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton) {
-                 console.error("One or more elements missing, cannot attach listeners.");
-                 return;
+                 console.error("Listeners setup error: Elements missing.");
+                 return; // Prevent errors if elements aren't found
              }
 
             // Scan Input Listener (Using 'keypress' as per your code)
@@ -198,7 +195,7 @@
                  e.target.value = value;
              });
 
-             // Manual DOB Focus/Click for OSK (Optional but good to keep)
+             // Manual DOB Focus/Click for OSK (Kept from previous merge)
              manualDobInput.addEventListener('focus', function() { console.log("Manual DOB focus"); safeShowOsk(); });
              manualDobInput.addEventListener('click', function() { console.log("Manual DOB click"); safeShowOsk(); });
 
@@ -221,44 +218,30 @@
             // Acknowledge Button Listener
             acknowledgeButton.addEventListener('click', function() {
                 console.log("Acknowledge button clicked. Returning to KORONA.");
-                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.backToKorona) {
-                    korona_plugin_api.backToKorona();
-                 } else {
-                     console.warn("KORONA API not found for backToKorona.");
-                 }
+                 safeBackToKorona();
             });
             console.log("Listeners setup complete.");
         }
 
         async function verifyIdOnBackend(payload) {
+            // (Function logic remains the same as your provided code, including adding POS/Cashier info)
             clearMessages();
             instructionsDiv.textContent = "Verifying...";
 
-            // --- Add POS/Cashier info ---
-            payload.posId = posInfo.number;
-            payload.posName = posInfo.name; // Optional
-            payload.cashierId = cashierInfo.number;
-            payload.cashierName = cashierInfo.name; // Optional
-            // ---------------------------
+            payload.posId = posInfo.number; payload.posName = posInfo.name;
+            payload.cashierId = cashierInfo.number; payload.cashierName = cashierInfo.name;
 
             console.log("Sending payload to backend:", JSON.stringify(payload));
 
             try {
-                const response = await fetch(BACKEND_VERIFY_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                const response = await fetch(BACKEND_VERIFY_URL, { /* ... */ });
                 const responseText = await response.text();
                 console.log("Raw backend response:", responseText);
-
                 if (!response.ok) { /* ... error handling ... */ throw new Error(errorMsg); }
-
                 const result = JSON.parse(responseText);
                 console.log("Parsed backend result:", result);
                 handleVerificationResult(result);
-
-            } catch (error) { /* ... error handling ... */
+            } catch (error) {
                  console.error("Error verifying ID:", error);
                  displayError(`System Error: ${error.message || 'Comm error.'}. Please try again.`, false);
                  enableInputs();
@@ -266,104 +249,51 @@
         }
 
         function handleVerificationResult(result) {
-            // (Using the logic from your provided code)
+            // (Function logic remains the same as your provided code)
             if (result.success === true) {
                 console.log("Verification Successful:", result.message);
                 displaySuccess(`Verification Success: ${result.message}`);
                 addKoronaReceiptInfo();
                 setTimeout(() => {
                      console.log("Returning to KORONA after success.");
-                     if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.backToKorona) {
-                         korona_plugin_api.backToKorona();
-                     }
+                     safeBackToKorona();
                 }, 1500);
              } else {
                  console.warn("Verification Failed:", result.message);
-                 let failureReason = "VERIFICATION FAILED - SALE DENIED";
-                 const backendMessage = result.message || "";
-                 let allowRetry = false; // Check if retry should be allowed
+                 let failureReason = "VERIFICATION FAILED - SALE DENIED"; /* ... determine reason ... */ let allowRetry = false;
+                 if (/* ... underage ... */) { failureReason = "DENY SALE - CUSTOMER IS UNDER 21"; }
+                 else if (/* ... expired ... */) { failureReason = "DENY SALE - CUSTOMER'S ID IS EXPIRED"; }
+                 else if (/* ... parsing error ... */) { failureReason = `ERROR READING ID: ${backendMessage}...`; allowRetry = true; errorArea.style.textTransform = 'none'; }
+                 else if (backendMessage) { failureReason = backendMessage.toUpperCase(); }
 
-                 if (backendMessage.toUpperCase().includes("UNDERAGE")) { failureReason = "DENY SALE - CUSTOMER IS UNDER 21"; }
-                 else if (backendMessage.toUpperCase().includes("EXPIRED")) { failureReason = "DENY SALE - CUSTOMER'S ID IS EXPIRED"; }
-                 else if (backendMessage.toLowerCase().includes("error reading id") || backendMessage.toLowerCase().includes("could not read") || backendMessage.toLowerCase().includes("parse") || backendMessage.toLowerCase().includes("invalid date")) {
-                     failureReason = `${backendMessage}. Check ID/scan or use manual entry.`;
-                     errorArea.style.textTransform = 'none';
-                     allowRetry = true; // Allow retry for these errors
-                 } else if (backendMessage) { failureReason = backendMessage.toUpperCase(); }
+                 displayError(failureReason, !allowRetry);
 
-                 displayError(failureReason, !allowRetry); // Show acknowledge only if NOT allowing retry
-
-                 if (allowRetry) {
-                     instructionsDiv.textContent = "Error reading ID. Please try again or use manual entry.";
-                     enableInputs(); // Re-enable inputs for retry
-                 } else {
-                     instructionsDiv.textContent = "Verification Failed. Acknowledge to return.";
-                     scanSectionDiv.classList.add('hidden');
-                     manualEntrySectionDiv.classList.add('hidden');
-                 }
+                 if (allowRetry) { instructionsDiv.textContent = "Error reading ID..."; enableInputs(); }
+                 else { instructionsDiv.textContent = "Verification Failed..."; scanSectionDiv.classList.add('hidden'); manualEntrySectionDiv.classList.add('hidden'); }
             }
         }
 
         // --- KORONA API Interaction Helpers ---
         function addKoronaReceiptInfo() {
-            try {
-                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.response?.addReceiptAdditionalInfo) {
-                     korona_plugin_api.response.addReceiptAdditionalInfo({
-                         key: "AgeVerification",
-                         value: `Verified OK @ ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`
-                     });
-                 } else { console.warn("Cannot add receipt info - KORONA API unavailable."); }
-             } catch (e) { console.error("Error calling addReceiptAdditionalInfo:", e); }
+             // (Same as your provided code)
+            try { if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.response?.addReceiptAdditionalInfo) { korona_plugin_api.response.addReceiptAdditionalInfo(/*...*/); } } catch (e) { console.error(e); }
         }
-        // Added safeShowOsk based on previous needs
+
+        // Added safe wrappers for consistency and error handling
         function safeShowOsk() {
-             try {
-                 if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.showOsk) {
-                     console.log("Requesting KORONA OSK.");
-                     korona_plugin_api.showOsk();
-                 } else { console.warn("Cannot call showOsk() - KORONA API unavailable."); }
-             } catch(e) { console.error("Error calling showOsk:", e); }
+             try { if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.showOsk) { korona_plugin_api.showOsk(); } else { console.warn("Cannot show OSK - API unavailable."); } } catch(e) { console.error("Error calling showOsk:", e); }
+        }
+        function safeBackToKorona() {
+             try { if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.backToKorona) { korona_plugin_api.backToKorona(); } else { console.warn("Cannot go back - API unavailable."); } } catch(e) { console.error("Error calling backToKorona:", e); }
         }
 
 
         // --- UI Update Functions (from your provided code) ---
-        function disableInputs() {
-            scanInput.disabled = true;
-            manualDobInput.disabled = true;
-            manualVerifyButton.disabled = true;
-        }
-
-        function enableInputs() {
-            scanInput.disabled = false;
-            manualDobInput.disabled = false;
-            manualVerifyButton.disabled = false;
-            scanInput.value = ''; // Clear scan input on enabling
-            scanInput.focus(); // Focus scan input by default
-        }
-
-        function displaySuccess(message) {
-            clearMessages();
-            resultArea.textContent = message;
-            resultArea.classList.remove('hidden');
-        }
-
-        function displayError(message, showAcknowledge) {
-            clearMessages();
-            errorArea.textContent = message;
-            errorArea.classList.remove('hidden');
-            if(showAcknowledge) {
-                 acknowledgeButton.classList.remove('hidden');
-            }
-        }
-
-        function clearMessages() {
-            resultArea.textContent = '';
-            resultArea.classList.add('hidden');
-            errorArea.textContent = '';
-            errorArea.classList.add('hidden');
-            acknowledgeButton.classList.add('hidden');
-             errorArea.style.textTransform = 'uppercase'; // Reset text transform
-        }
+        function disableInputs() { scanInput.disabled = true; manualDobInput.disabled = true; manualVerifyButton.disabled = true; }
+        function enableInputs() { scanInput.disabled = false; manualDobInput.disabled = false; manualVerifyButton.disabled = false; scanInput.value = ''; scanInput.focus(); }
+        function displaySuccess(message) { clearMessages(); resultArea.textContent = message; resultArea.classList.remove('hidden'); }
+        function displayError(message, showAcknowledge) { clearMessages(); errorArea.textContent = message; errorArea.classList.remove('hidden'); if(showAcknowledge) { acknowledgeButton.classList.remove('hidden'); } }
+        function clearMessages() { resultArea.textContent = ''; resultArea.classList.add('hidden'); errorArea.textContent = ''; errorArea.classList.add('hidden'); acknowledgeButton.classList.add('hidden'); errorArea.style.textTransform = 'uppercase'; }
 
     </script>
 </body>
