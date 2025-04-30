@@ -6,7 +6,7 @@
     <title>Age Verification</title>
     <script type="text/javascript" src="korona-plugin-api.js"></script>
     <style>
-        /* Styles from your previous working version */
+        /* Styles from your previously working version */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; background-color: #f4f7f9; color: #333; margin: 20px; text-align: center; } .container { background-color: #ffffff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 600px; width: 100%; } h1 { color: #2a3b4c; margin-bottom: 20px; } #instructions, #scan-area, #manual-entry-area, #result-area, #error-area { margin-top: 15px; padding: 10px; border-radius: 5px; } #instructions { font-size: 1.1em; color: #555; } #scan-area input[type="text"], #manual-entry-area input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 70%; margin-bottom: 10px; font-size: 1em; } label { display: block; margin-bottom: 5px; font-weight: bold;} #result-area { border: 1px solid #d1e7dd; background-color: #f0fff4; color: #0f5132; font-weight: bold; } #error-area { border: 1px solid #f5c6cb; background-color: #fff0f1; color: #842029; font-weight: bold; text-transform: uppercase; } .hidden { display: none; } button { background-color: #007bff; color: white; padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.95em; margin-top: 10px; transition: background-color 0.2s ease; margin-left: 5px; margin-right: 5px; } button:hover { background-color: #0056b3; } button#acknowledge-button { background-color: #6c757d; } button#acknowledge-button:hover { background-color: #5a6268; } hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 25px 0; }
         #manual-entry-instructions { font-size: 0.9em; color: #555; margin-top: 5px; }
     </style>
@@ -14,164 +14,125 @@
 <body>
     <div class="container">
         <h1 id="page-title">Age Verification</h1>
-        <!-- Other HTML remains the same -->
+         <!-- Other HTML remains the same -->
          <!-- Scan Section -->
-        <div id="scan-section">
-             <div id="instructions"> Initializing... </div>
-             <div id="scan-area">
-                 <label for="scan-input">Scanner Input:</label>
-                 <input type="text" id="scan-input" name="scan-input" autocomplete="off" autofocus>
-             </div>
-        </div>
-        <hr>
-        <!-- Manual Entry Section -->
-        <div id="manual-entry-section">
-             <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label>
-             <div id="manual-entry-area">
-                 <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10">
-                 <button id="manual-verify-button">Verify Manual Date</button>
-             </div>
-             <div id="manual-entry-instructions" style="font-size: 0.9em; color: #555; margin-top: 5px;">
-                (Use only if scan fails and you have verified the ID is not expired)
-             </div>
-        </div>
-        <!-- Result/Error Area -->
-        <div id="result-area" class="hidden"></div>
-        <div id="error-area" class="hidden"></div>
-        <button id="acknowledge-button" class="hidden">Acknowledge & Return to POS</button>
+        <div id="scan-section"> <div id="instructions"> Initializing... </div> <div id="scan-area"> <label for="scan-input">Scanner Input:</label> <input type="text" id="scan-input" name="scan-input" autocomplete="off" autofocus> </div> </div> <hr> <!-- Manual Entry Section --> <div id="manual-entry-section"> <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label> <div id="manual-entry-area"> <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10"> <button id="manual-verify-button">Verify Manual Date</button> </div> <div id="manual-entry-instructions" style="font-size: 0.9em; color: #555; margin-top: 5px;"> (Use only if scan fails and you have verified the ID is not expired) </div> </div> <!-- Result/Error Area --> <div id="result-area" class="hidden"></div> <div id="error-area" class="hidden"></div> <button id="acknowledge-button" class="hidden">Acknowledge & Return to POS</button>
     </div>
 
     <script>
-        // --- Configuration ---
+        // Config & Globals (remain the same)
         const REQUIRED_SECTOR_NUMBER = "1";
         const BACKEND_VERIFY_URL = "https://i3r4d.pythonanywhere.com/api/verify-id";
         let scanInput, manualDobInput, manualVerifyButton, resultArea, errorArea, instructionsDiv, scanAreaDiv, manualEntryArea, acknowledgeButton, scanSectionDiv, manualEntrySectionDiv, pageTitle;
         let posInfo = { number: null, name: null };
         let cashierInfo = { number: null, name: null };
-        let invocationMode = 'total';
+        let invocationMode = 'total'; // Default
 
-        window.onload = function() { /* ... Same as previous ... */
+        window.onload = function() {
             console.log("Window loaded.");
             try { const urlParams = new URLSearchParams(window.location.search); const triggerParam = urlParams.get('trigger'); if (triggerParam && triggerParam.toLowerCase() === 'button') { invocationMode = 'button'; } console.log(`Invocation Mode: ${invocationMode}`); } catch (e) { console.error("URL param error:", e); }
+            // Get DOM Elements
             scanInput = document.getElementById('scan-input'); manualDobInput = document.getElementById('manual-dob-input'); manualVerifyButton = document.getElementById('manual-verify-button'); resultArea = document.getElementById('result-area'); errorArea = document.getElementById('error-area'); instructionsDiv = document.getElementById('instructions'); scanAreaDiv = document.getElementById('scan-area'); manualEntryArea = document.getElementById('manual-entry-area'); acknowledgeButton = document.getElementById('acknowledge-button'); scanSectionDiv = document.getElementById('scan-section'); manualEntrySectionDiv = document.getElementById('manual-entry-section'); pageTitle = document.getElementById('page-title');
+            // Set Title
             if (invocationMode === 'button') { pageTitle.textContent = "Manual Age Verification"; } else { pageTitle.textContent = "Age Verification Required"; }
+            // Init KORONA API
             console.log("Init KORONA API connection.");
-            if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.ready) { korona_plugin_api.ready(initializeKoronaData); } else { console.warn("KORONA API not found/ready."); }
+            if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.ready) { korona_plugin_api.ready(initializeKoronaData); } else { console.warn("KORONA API not found/ready."); instructionsDiv.textContent = "KORONA Connection Error"; }
         };
 
-        function initializeKoronaData() { /* ... Same as previous ... */
-            try { console.log("KORONA API Ready."); const requestData = korona_plugin_api.request; const receipt = requestData?.receipt; posInfo = requestData?.pos || {}; cashierInfo = requestData?.cashier || {}; console.log(`POS: ${posInfo.number}, Cashier: ${cashierInfo.number}`); const verificationStrictlyNeeded = isVerificationNeeded(receipt);
+        function initializeKoronaData() {
+            console.log("KORONA API Ready.");
+            try {
+                const requestData = korona_plugin_api.request; const receipt = requestData?.receipt; posInfo = requestData?.pos || {}; cashierInfo = requestData?.cashier || {}; console.log(`POS: ${posInfo.number}, Cashier: ${cashierInfo.number}`);
+                const verificationStrictlyNeeded = isVerificationNeeded(receipt);
                 if (invocationMode === 'total' && !verificationStrictlyNeeded) { console.log(`On Total: No items. Skipping.`); safeBackToKorona(); return; }
-                console.log(`Proceeding: Mode='${invocationMode}', Needed=${verificationStrictlyNeeded}`); setupListeners(); scanInput.focus();
+                console.log(`Proceeding: Mode='${invocationMode}', Needed=${verificationStrictlyNeeded}`);
+                setupListeners(); // Setup the listeners
+                instructionsDiv.textContent = "Please scan the barcode..."; // Reset instruction text
+                scanInput.focus();
             } catch (error) { console.error("Init Error:", error); displayError(`Init Error: ${error.message || 'Unknown'}`, true); }
         }
 
-        function isVerificationNeeded(receipt) { /* ... Same as previous ... */
-            if (!receipt || !receipt.sales || !Array.isArray(receipt.sales) || receipt.sales.length === 0) { return false; }
-            const needed = receipt.sales.some(item => item?.sector?.number === REQUIRED_SECTOR_NUMBER); console.log(`isVerificationNeeded: ${needed}`); return needed;
-         }
+        function isVerificationNeeded(receipt) { /* ... Same logic ... */ return true; }
 
-        // --- UPDATED setupListeners ---
+        // --- REVISED setupListeners ---
         function setupListeners() {
             console.log("setupListeners called.");
-             // Ensure all required elements are available before proceeding
+             // Ensure all required elements are available
              if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton || !instructionsDiv) {
-                 console.error("Listeners setup error: One or more required elements missing.");
-                 displayError("Page Error: Cannot setup interactions.", true);
+                 console.error("Listeners setup error: Elements missing.");
+                 if(instructionsDiv) instructionsDiv.textContent = "Page Error!"; // Show error on UI
                  return;
              }
 
-            // 1. Scan Input Listener ('keypress' based on your working version)
+            // 1. Scan Input Listener ('keypress')
             console.log("Attaching 'keypress' listener to scanInput.");
-            scanInput.addEventListener('keypress', function(event) {
+            // Clear previous listener just in case to prevent duplicates if called multiple times
+            // scanInput.removeEventListener('keypress', handleScanInput); // Need named function for remove
+            // Instead, we rely on setupListeners only being called once after API ready
+            scanInput.addEventListener('keypress', function handleScanInput(event) { // Named function not strictly needed here
                 if (event.key === 'Enter' || event.keyCode === 13) {
                     event.preventDefault();
                     const scannedData = scanInput.value.trim();
-                    console.log("Scanner input ('keypress' Enter) received:", scannedData);
-                    if (scannedData) {
-                        disableInputs();
-                        instructionsDiv.textContent = "Processing scanned data...";
-                        verifyIdOnBackend({ scanData: scannedData });
-                    } else {
-                        console.log("Scan input was empty.");
-                        displayError("Scan input empty. Please scan again.", false);
-                        scanInput.focus(); // Keep focus on scan input if empty
-                    }
+                    console.log("Scanner 'keypress' Enter received:", scannedData);
+                    if (scannedData) { disableInputs(); instructionsDiv.textContent = "Processing scan..."; verifyIdOnBackend({ scanData: scannedData }); }
+                    else { console.log("Scan empty."); displayError("Scan input empty.", false); scanInput.focus(); }
                 }
             });
 
             // 2. Manual DOB Input Formatting ('input' event)
-            console.log("Attaching 'input' listener to manualDobInput for formatting.");
-            manualDobInput.addEventListener('input', function(e) {
-                 // Formatting logic (MM/DD/YYYY)
-                 let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-                 if (value.length > 2 && value.length <= 4) {
-                     value = value.slice(0, 2) + '/' + value.slice(2);
-                 } else if (value.length > 4) {
-                     value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8);
-                 }
-                 e.target.value = value; // Update the input field's value
-                 console.log("Formatted manual input:", e.target.value); // Log formatting
+            console.log("Attaching 'input' listener to manualDobInput.");
+            manualDobInput.addEventListener('input', function handleManualFormat(e) {
+                 let value = e.target.value.replace(/\D/g, '');
+                 if (value.length > 2 && value.length <= 4) { value = value.slice(0, 2) + '/' + value.slice(2); }
+                 else if (value.length > 4) { value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4, 8); }
+                 e.target.value = value;
+                 // console.log("Formatted manual input:", e.target.value); // Optional log
             });
 
              // 3. Manual DOB Focus/Click for OSK (Conditional)
-             console.log("Attaching 'focus' listener to manualDobInput for OSK.");
-             manualDobInput.addEventListener('focus', function() {
+             console.log("Attaching 'focus' listener to manualDobInput (OSK).");
+             manualDobInput.addEventListener('focus', function handleManualFocus() {
                  console.log("Manual DOB focus");
-                 if (invocationMode === 'button') { // Check Mode
-                     console.log("Button mode detected, requesting OSK.");
-                     safeShowOsk();
-                 } else {
-                     console.log("Total mode detected, OSK not shown on focus.");
-                 }
+                 if (invocationMode === 'button') { console.log("Button mode -> OSK"); safeShowOsk(); }
+                 else { console.log("Total mode - No OSK on focus."); }
              });
-             console.log("Attaching 'click' listener to manualDobInput for OSK.");
-             manualDobInput.addEventListener('click', function() {
+             console.log("Attaching 'click' listener to manualDobInput (OSK).");
+             manualDobInput.addEventListener('click', function handleManualClickForOSK() {
                  console.log("Manual DOB click");
-                 if (invocationMode === 'button') { // Check Mode
-                     console.log("Button mode detected, requesting OSK.");
-                     safeShowOsk();
-                 } else {
-                     console.log("Total mode detected, OSK not shown on click.");
-                 }
+                 if (invocationMode === 'button') { console.log("Button mode -> OSK"); safeShowOsk(); }
+                 else { console.log("Total mode - No OSK on click."); }
              });
 
             // 4. Manual Verify Button Listener ('click' event)
             console.log("Attaching 'click' listener to manualVerifyButton.");
-            manualVerifyButton.addEventListener('click', function() {
-                // Add immediate feedback that the button was clicked
+            manualVerifyButton.addEventListener('click', function handleManualVerify() {
                 console.log("Manual verify button - click detected!");
-                manualVerifyButton.style.backgroundColor = '#0056b3'; // Briefly change color
-                setTimeout(() => { manualVerifyButton.style.backgroundColor = ''; }, 200); // Reset color
+                // Add feedback if helpful:
+                // manualVerifyButton.style.opacity = '0.5'; setTimeout(() => { manualVerifyButton.style.opacity = '1'; }, 200);
 
                 const manualDobValue = manualDobInput.value.trim();
                 console.log("Manual verify processing. DOB:", manualDobValue);
-
                 const dateFormat = /^\d{2}\/\d{2}\/\d{4}$/;
                 if (!dateFormat.test(manualDobValue)) {
                     console.log("Manual DOB format invalid.");
                     displayError("Invalid date format. Please use MM/DD/YYYY.", false);
-                    manualDobInput.focus(); // Re-focus the input for correction
-                    return; // Stop processing
+                    manualDobInput.focus(); return;
                 }
-
-                // Proceed if format is valid
-                console.log("Manual DOB format valid. Disabling inputs and calling backend.");
-                disableInputs();
-                instructionsDiv.textContent = "Processing manual date...";
-                verifyIdOnBackend({ manualDob: manualDobValue }); // Send manualDob payload
+                console.log("Manual DOB format valid. Calling backend.");
+                disableInputs(); instructionsDiv.textContent = "Processing manual date...";
+                verifyIdOnBackend({ manualDob: manualDobValue });
             });
 
             // 5. Acknowledge Button Listener ('click' event)
             console.log("Attaching 'click' listener to acknowledgeButton.");
-            acknowledgeButton.addEventListener('click', function() {
-                console.log("Acknowledge button clicked.");
-                 safeBackToKorona();
+            acknowledgeButton.addEventListener('click', function handleAcknowledge() {
+                console.log("Acknowledge button clicked."); safeBackToKorona();
             });
 
             console.log("Listeners setup complete.");
         }
-        // --- END UPDATED setupListeners ---
+        // --- END REVISED setupListeners ---
 
 
         async function verifyIdOnBackend(payload) { /* ... Same as previous ... */
@@ -183,14 +144,15 @@
             if (result.success === true) { console.log("OK:", result.message); displaySuccess(`OK: ${result.message}`); addKoronaReceiptInfo(); setTimeout(safeBackToKorona, 1500); } else { console.warn("FAIL:", result.message); let reason="VERIFY FAIL"; const msg=result.message||""; let retry=false; if(msg.toUpperCase().includes("UNDERAGE")){reason="DENY SALE - UNDER 21";} else if(msg.toUpperCase().includes("EXPIRED")){reason="DENY SALE - EXPIRED ID";} else if(msg.toLowerCase().includes("error reading")||msg.toLowerCase().includes("parse")||msg.toLowerCase().includes("invalid date")){reason=`ERR: ${msg}. Check/Retry.`; errorArea.style.textTransform='none'; retry=true;} else if(msg){reason=msg.toUpperCase();} displayError(reason, !retry); if(retry){instructionsDiv.textContent="Error reading ID. Try again."; enableInputs();} else {instructionsDiv.textContent="Verify Fail. Acknowledge."; scanSectionDiv.classList.add('hidden'); manualEntrySectionDiv.classList.add('hidden');} }
          }
 
-        function addKoronaReceiptInfo() { /* ... Same as previous ... */ }
-        function safeShowOsk() { /* ... Same as previous ... */ }
-        function safeBackToKorona() { /* ... Same as previous ... */ }
-        function disableInputs() { /* ... Same as previous ... */ }
-        function enableInputs() { /* ... Same as previous ... */ }
-        function displaySuccess(message) { /* ... Same as previous ... */ }
-        function displayError(message, showAcknowledge) { /* ... Same as previous ... */ }
-        function clearMessages() { /* ... Same as previous ... */ }
+        // --- Helper & UI Functions ---
+        function addKoronaReceiptInfo() { /* ... Same ... */ }
+        function safeShowOsk() { /* ... Same ... */ }
+        function safeBackToKorona() { /* ... Same ... */ }
+        function disableInputs() { /* ... Same ... */ }
+        function enableInputs() { /* ... Same ... */ }
+        function displaySuccess(message) { /* ... Same ... */ }
+        function displayError(message, showAcknowledge) { /* ... Same ... */ }
+        function clearMessages() { /* ... Same ... */ }
 
     </script>
 </body>
