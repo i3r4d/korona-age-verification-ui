@@ -6,14 +6,14 @@
     <title>Age Verification Required</title> <!-- Specific Title -->
     <script type="text/javascript" src="korona-plugin-api.js"></script>
     <style>
-        /* Styles can be identical to previous versions */
+        /* Styles remain the same */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; background-color: #f4f7f9; color: #333; margin: 20px; text-align: center; } .container { background-color: #ffffff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 600px; width: 100%; } h1 { color: #2a3b4c; margin-bottom: 20px; } #instructions, #scan-area, #manual-entry-area, #result-area, #error-area { margin-top: 15px; padding: 10px; border-radius: 5px; } #instructions { font-size: 1.1em; color: #555; } #scan-area input[type="text"], #manual-entry-area input[type="text"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 70%; margin-bottom: 10px; font-size: 1em; } label { display: block; margin-bottom: 5px; font-weight: bold;} #result-area { border: 1px solid #d1e7dd; background-color: #f0fff4; color: #0f5132; font-weight: bold; } #error-area { border: 1px solid #f5c6cb; background-color: #fff0f1; color: #842029; font-weight: bold; text-transform: uppercase; } .hidden { display: none; } button { background-color: #007bff; color: white; padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.95em; margin-top: 10px; transition: background-color 0.2s ease; margin-left: 5px; margin-right: 5px; } button:hover { background-color: #0056b3; } button#acknowledge-button { background-color: #6c757d; } button#acknowledge-button:hover { background-color: #5a6268; } hr { border: 0; height: 1px; background-color: #e0e0e0; margin: 25px 0; }
         #manual-entry-instructions { font-size: 0.9em; color: #555; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Age Verification Required</h1> <!-- Specific Title -->
+        <h1>Age Verification Required</h1> <!-- Title for On Total -->
          <!-- HTML Structure (Scan, Manual, Result areas) remains the same -->
          <!-- Scan Section --> <div id="scan-section"> <div id="instructions"> Initializing... </div> <div id="scan-area"> <label for="scan-input">Scanner Input:</label> <input type="text" id="scan-input" name="scan-input" autocomplete="off" autofocus> </div> </div> <hr> <!-- Manual Entry Section --> <div id="manual-entry-section"> <label for="manual-dob-input">Manually enter the customer's birth date (MM/DD/YYYY)</label> <div id="manual-entry-area"> <input type="text" id="manual-dob-input" name="manual-dob-input" placeholder="MM/DD/YYYY" pattern="\d{2}/\d{2}/\d{4}" maxlength="10"> <button id="manual-verify-button">Verify Manual Date</button> </div> <div id="manual-entry-instructions" style="font-size: 0.9em; color: #555; margin-top: 5px;"> (Use only if scan fails and you have verified the ID is not expired) </div> </div> <!-- Result/Error Area --> <div id="result-area" class="hidden"></div> <div id="error-area" class="hidden"></div> <button id="acknowledge-button" class="hidden">Acknowledge & Return to POS</button>
     </div>
@@ -22,26 +22,26 @@
         // Config
         const REQUIRED_SECTOR_NUMBER = "1";
         const BACKEND_VERIFY_URL = "https://i3r4d.pythonanywhere.com/api/verify-id";
-        const PAYMENT_BLOCK_MESSAGE = "Age verification required."; // Blocker message needed
+        // Payment Blocker constant REMOVED
         // DOM Elements & Globals
         let scanInput, manualDobInput, manualVerifyButton, resultArea, errorArea, instructionsDiv, acknowledgeButton, scanSectionDiv, manualEntrySectionDiv;
         let posInfo = {}, cashierInfo = {};
-        let processingScan = false; // Use flag if needed for async calls
+        let processingScan = false;
 
         window.onload = function() {
-            console.log("scan_total.html loaded.");
+            console.log("scan_total.html loaded (Blocker Removed).");
             // Get DOM Elements
-            scanInput = document.getElementById('scan-input'); /* ... get other elements ... */ manualDobInput = document.getElementById('manual-dob-input'); manualVerifyButton = document.getElementById('manual-verify-button'); resultArea = document.getElementById('result-area'); errorArea = document.getElementById('error-area'); instructionsDiv = document.getElementById('instructions'); acknowledgeButton = document.getElementById('acknowledge-button'); scanSectionDiv = document.getElementById('scan-section'); manualEntrySectionDiv = document.getElementById('manual-entry-section');
-             if (!scanInput) { instructionsDiv.textContent = "Page Load Error!"; return; } // Basic check
+            scanInput = document.getElementById('scan-input'); /* ... */ manualDobInput = document.getElementById('manual-dob-input'); /* ... */ manualVerifyButton = document.getElementById('manual-verify-button'); /* ... */ resultArea = document.getElementById('result-area'); /* ... */ errorArea = document.getElementById('error-area'); /* ... */ instructionsDiv = document.getElementById('instructions'); /* ... */ acknowledgeButton = document.getElementById('acknowledge-button'); /* ... */ scanSectionDiv = document.getElementById('scan-section'); /* ... */ manualEntrySectionDiv = document.getElementById('manual-entry-section');
+             if (!scanInput) { instructionsDiv.textContent = "Page Load Error!"; return; }
 
-            console.log("Init KORONA API for On Total.");
+            console.log("Init KORONA API for On Total (Blocker Removed).");
             if (typeof korona_plugin_api !== 'undefined' && korona_plugin_api?.ready) {
                 korona_plugin_api.ready(initializeKoronaData);
             } else { console.warn("KORONA API unavailable."); instructionsDiv.textContent = "KORONA Connection Error!"; }
         };
 
         function initializeKoronaData() {
-            console.log("KORONA Ready (On Total).");
+            console.log("KORONA Ready (On Total - Blocker Removed).");
             try {
                 const requestData = korona_plugin_api.request; const receipt = requestData?.receipt;
                 posInfo = requestData?.pos || {}; cashierInfo = requestData?.cashier || {};
@@ -52,13 +52,13 @@
                     safeBackToKorona(); return;
                 }
 
-                // Set the payment blocker because this is the On Total trigger
-                console.log("On Total: Setting payment blocker.");
-                safeSetPaymentBlocker();
+                // --- Payment blocker logic REMOVED ---
+                // console.log("On Total: Setting payment blocker."); // Removed
+                // safeSetPaymentBlocker(); // Removed
 
                 console.log("Proceeding to setup listeners (On Total).");
                 setupListeners();
-                 instructionsDiv.textContent = "Please scan the barcode..."; // Set initial instruction
+                 instructionsDiv.textContent = "Please scan the barcode...";
                 scanInput.focus();
 
             } catch (error) { console.error("Init Error:", error); displayError(`Init Error: ${error.message || 'Unknown'}`, true); }
@@ -68,7 +68,7 @@
 
         function setupListeners() {
             console.log("setupListeners (On Total) called.");
-            if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton) { return; } // Basic check
+            if (!scanInput || !manualDobInput || !manualVerifyButton || !acknowledgeButton) { return; }
 
             // 1. Scan Input Listener
             scanInput.addEventListener('keypress', function(event) {
@@ -83,13 +83,13 @@
             // 2. Manual DOB Input Formatting
             manualDobInput.addEventListener('input', function(e) { /* ... Same MM/DD/YYYY formatting ... */ });
 
-            // 3. Manual DOB Focus/Click -> NO OSK TRIGGER HERE for On Total
+            // 3. Manual DOB Focus/Click -> NO OSK TRIGGER
 
             // 4. Manual Verify Button Listener
             manualVerifyButton.addEventListener('click', function() {
                 console.log("Manual Verify clicked (Total)");
                 const manualDobValue = manualDobInput.value.trim();
-                const dateFormat = /^\d{2}\/\d{2}\/\d{4}$/;
+                const dateFormat = /^\d{2}\/\d{2}/\d{4}$/;
                 if (!dateFormat.test(manualDobValue)) { displayError("Invalid date format.", false); manualDobInput.focus(); return; }
                 disableInputs(); instructionsDiv.textContent = "Processing manual date...";
                 verifyIdOnBackend({ manualDob: manualDobValue });
@@ -106,41 +106,55 @@
              clearMessages(); instructionsDiv.textContent = "Verifying...";
              payload.posId = posInfo.number; payload.posName = posInfo.name;
              payload.cashierId = cashierInfo.number; payload.cashierName = cashierInfo.name;
-             console.log("Sending (Total):", JSON.stringify(payload));
-             try { /* ... fetch ... handle response ... */ } catch (error) { /* ... handle error ... */ }
+             console.log("Sending (Total - No Blocker):", JSON.stringify(payload));
+             try {
+                 instructionsDiv.textContent = "Verifying... (Sending Request)"; // UI Feedback
+                 const response = await fetch(BACKEND_VERIFY_URL, { /* ... */ });
+                 instructionsDiv.textContent = `Verifying... (Got Response: ${response.status})`; // UI Feedback
+                 const responseText = await response.text();
+                 console.log("Raw backend:", responseText);
+                 instructionsDiv.textContent = "Verifying... (Processing Response)"; // UI Feedback
+                 if (!response.ok) { /* ... error handling ... */ throw new Error(errorMsg); }
+                 const result = JSON.parse(responseText);
+                 instructionsDiv.textContent = ''; // Clear processing message
+                 handleVerificationResult(result);
+             } catch (error) {
+                 console.error("Verify Error:", error);
+                 displayError(`System Error: ${error.message || 'Comm failed.'}`, false);
+                 enableInputs();
+                 instructionsDiv.textContent = "Error. Please try again."; // Reset instruction on error
+             } finally {
+                 if (typeof processingScan !== 'undefined') { processingScan = false; }
+             }
         }
 
         function handleVerificationResult(result) {
-             console.log(`Handling result (Total): Success=${result.success}`);
-             processingScan = false; // Assuming this flag exists and needs reset
+             console.log(`Handling result (Total - No Blocker): Success=${result.success}`);
+             // processingScan = false; // Reset in finally block of verifyIdOnBackend
 
              if (result.success === true) {
                  displaySuccess(`OK: ${result.message}`); addKoronaReceiptInfo();
-                 // Unset the blocker ONLY on success for On Total trigger
-                 console.log("Success (Total): Unsetting payment blocker.");
-                 safeUnsetPaymentBlocker();
+                 // --- Payment blocker logic REMOVED ---
+                 // console.log("Success (Total): Unsetting payment blocker."); // Removed
+                 // safeUnsetPaymentBlocker(); // Removed
                  setTimeout(safeBackToKorona, 1500);
              } else {
-                 // Handle failure (same logic as before for determining message)
-                 let failureReason = "VERIFY FAIL"; /* ... determine reason ... */ let allowRetry = false; /* ... */
+                 // Handle failure (same logic)
+                 let failureReason = "VERIFY FAIL"; /* ... */ let allowRetry = false; /* ... */
                  console.warn("Fail (Total):", failureReason);
-                 displayError(failureReason, !allowRetry); // Show acknowledge if not retryable
-                 // DO NOT unset blocker on failure
+                 displayError(failureReason, !allowRetry);
                  if (allowRetry) { instructionsDiv.textContent = "Error. Try again."; enableInputs(); }
                  else { instructionsDiv.textContent = "Verify Fail. Acknowledge."; /* hide inputs */ }
              }
         }
 
         // --- KORONA API Helpers ---
-        // Include safeSetPaymentBlocker, safeUnsetPaymentBlocker, addKoronaReceiptInfo, safeBackToKorona
-        function safeSetPaymentBlocker() { try { if(korona_plugin_api?.response?.setReceiptPaymentBlockingIndicator){ korona_plugin_api.response.setReceiptPaymentBlockingIndicator({message: PAYMENT_BLOCK_MESSAGE}); console.log("Set Blocker Requested."); } } catch(e){ console.error(e); } }
-        function safeUnsetPaymentBlocker() { try { if(korona_plugin_api?.response?.unsetReceiptPaymentBlockingIndicator){ korona_plugin_api.response.unsetReceiptPaymentBlockingIndicator(); console.log("Unset Blocker Requested."); } } catch(e){ console.error(e); } }
+        // REMOVED safeSetPaymentBlocker, safeUnsetPaymentBlocker
         function addKoronaReceiptInfo() { try { /* ... */ } catch(e) { console.error(e); } }
         function safeBackToKorona() { try { if(korona_plugin_api?.backToKorona){ korona_plugin_api.backToKorona(); } } catch(e) { console.error(e); } }
-        // NOTE: safeShowOsk is NOT needed/included in this file
+        // safeShowOsk is not needed in this file
 
         // --- UI Functions ---
-        // Include disableInputs, enableInputs, displaySuccess, displayError, clearMessages
         function disableInputs() { /* ... */ } function enableInputs() { /* ... */ } function displaySuccess(message) { /* ... */ } function displayError(message, showAcknowledge) { /* ... */ } function clearMessages() { /* ... */ }
 
     </script>
